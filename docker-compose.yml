@@ -1,0 +1,45 @@
+# docker-compose.yml — single-service deployment of the full stack
+#
+# Usage:
+#   docker compose up -d       # build + start
+#   docker compose logs -f     # follow logs
+#   docker compose down        # stop + remove container
+#
+# The data volume persists SQLite (projects + jobs) and ai-settings.json
+# across container restarts. Delete the volume to reset state:
+#   docker compose down -v
+#
+# Optional: connect to a host-side Ollama by pointing OLLAMA_HOST at it.
+
+services:
+  saas-to-talend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: saas-to-talend:latest
+    container_name: saas-to-talend
+    ports:
+      - "3000:3000"    # Web UI (React + Express)
+      # - "8081:8081"  # Uncomment to expose the Java engine directly
+    volumes:
+      - saas-talend-data:/opt/app/server/data
+    environment:
+      NODE_ENV: production
+      ENGINE_URL: http://localhost:8081
+      PORT: 3000
+      # Ollama on host machine (Docker Desktop):
+      # OLLAMA_BASE_URL: http://host.docker.internal:11434
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - sh
+        - -c
+        - "curl -f http://localhost:3000/api/health && curl -f http://localhost:8081/api/engine/health"
+      interval: 30s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
+
+volumes:
+  saas-talend-data:

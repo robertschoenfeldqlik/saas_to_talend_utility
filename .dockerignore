@@ -1,0 +1,33 @@
+# Build artifacts (rebuilt inside the image)
+engine/target/
+engine/.mvn/
+app/client/dist/
+app/client/node_modules/
+app/server/node_modules/
+app/server/data/
+
+# Local dev state
+app/server/data/*.db
+app/server/data/*.db-*
+app/server/data/ai-settings.json
+
+# Electron artifacts
+app/electron/
+app/package-lock.json
+app/package.json
+
+# Reference / unused
+Singer.IO/
+docker/README.md
+
+# VCS + editor
+.git/
+.gitignore
+.vscode/
+.idea/
+*.iml
+
+# Plans / docs generated locally
+plans/
+*.log
+/tmp/
