@@ -30,6 +30,12 @@ export default function JobListPage() {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(new Set()); // Collapsed project IDs
 
+  // Inline confirmation state — replaces native confirm() which is silently
+  // blocked in some browser configurations and Electron environments.
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState(null);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -103,43 +109,77 @@ export default function JobListPage() {
     });
   };
 
-  const handleDeleteSingle = async (e, jobId, jobName) => {
+  const handleDeleteSingle = (e, jobId, jobName) => {
     e.stopPropagation();
-    if (!confirm(`Delete job "${jobName}"?`)) return;
+    setActionError(null);
+    setPendingDelete({
+      type: 'jobs',
+      jobIds: [jobId],
+      label: `Delete job "${jobName}"?`,
+    });
+  };
+
+  const requestDeleteProject = (e, projectId, projectName, jobCount) => {
+    e.stopPropagation();
+    setActionError(null);
+    setPendingDelete({
+      type: 'project',
+      projectId,
+      label: jobCount > 0
+        ? `Delete SaaS project "${projectName}" and all ${jobCount} of its jobs?`
+        : `Delete SaaS project "${projectName}"?`,
+    });
+  };
+
+  const requestBulkDelete = () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setActionError(null);
+    setPendingDelete({
+      type: 'jobs',
+      jobIds: ids,
+      label: `Delete ${ids.length} selected job${ids.length > 1 ? 's' : ''}?`,
+    });
+  };
+
+  const cancelDelete = () => {
+    setPendingDelete(null);
+    setActionError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setActionError(null);
     try {
-      await deleteJob(jobId);
-      setJobs((prev) => prev.filter((j) => j.id !== jobId));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(jobId);
-        return next;
-      });
+      if (pendingDelete.type === 'project') {
+        const projectId = pendingDelete.projectId;
+        await deleteProject(projectId);
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        setJobs((prev) => prev.filter((j) => j.projectId !== projectId));
+        setSelected((prev) => {
+          const next = new Set(prev);
+          for (const id of prev) {
+            if (jobs.find((j) => j.id === id)?.projectId === projectId) next.delete(id);
+          }
+          return next;
+        });
+      } else if (pendingDelete.type === 'jobs') {
+        const ids = pendingDelete.jobIds;
+        await deleteJobs(ids);
+        setJobs((prev) => prev.filter((j) => !ids.includes(j.id)));
+        setSelected(new Set());
+      }
+      setPendingDelete(null);
     } catch (err) {
-      alert(`Failed to delete job: ${err.response?.data?.error || err.message}`);
+      setActionError(`Failed to delete: ${err.response?.data?.error || err.message || 'unknown error'}`);
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const handleDeleteProject = async (e, projectId, projectName, jobCount) => {
-    e.stopPropagation();
-    const confirmMsg = jobCount > 0
-      ? `Delete SaaS project "${projectName}" and all ${jobCount} of its jobs?`
-      : `Delete SaaS project "${projectName}"?`;
-    if (!confirm(confirmMsg)) return;
-    try {
-      await deleteProject(projectId);
-      setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      setJobs((prev) => prev.filter((j) => j.projectId !== projectId));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        for (const id of prev) {
-          if (jobs.find((j) => j.id === id)?.projectId === projectId) next.delete(id);
-        }
-        return next;
-      });
-    } catch (err) {
-      alert(`Failed to delete project: ${err.response?.data?.error || err.message}`);
-    }
-  };
+  // Legacy alias kept so the JSX further down doesn't have to change yet
+  const handleDeleteProject = requestDeleteProject;
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selected);
@@ -183,6 +223,60 @@ export default function JobListPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto animate-fade-in-up">
+      {/* ── Inline delete confirmation modal ─────────────────────────────
+            Replaces the native window.confirm() which is silently blocked
+            in some browser configurations and Electron, leading users to
+            think the delete button doesn't work. ─────────────────────── */}
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={cancelDelete}
+        >
+          <div
+            className="card p-6 max-w-md w-full mx-4 animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'rgb(var(--color-surface))' }}
+          >
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold mb-1" style={{ color: 'rgb(var(--color-text))' }}>
+                  Confirm deletion
+                </h3>
+                <p className="text-sm" style={{ color: 'rgb(var(--color-text-secondary))' }}>
+                  {pendingDelete.label}
+                </p>
+              </div>
+            </div>
+            {actionError && (
+              <div className="mb-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-600">
+                {actionError}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={cancelDelete}
+                disabled={deleting}
+                className="btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="btn-danger text-sm flex items-center gap-2"
+              >
+                {deleting ? <span className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> : <Trash2 className="w-4 h-4" />}
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="page-header">Jobs</h1>
@@ -195,7 +289,7 @@ export default function JobListPage() {
               Export Selected ({selected.size})
             </button>
             <button
-              onClick={handleBulkDelete}
+              onClick={requestBulkDelete}
               className="btn-danger flex items-center gap-2 text-sm"
             >
               <Trash2 className="w-4 h-4" />

@@ -23,7 +23,7 @@ router.all('/*', async (req, res) => {
         'Content-Type': 'application/json',
         'Accept': req.headers.accept || 'application/json',
       },
-      timeout: 5000,
+      timeout: 60000,
       responseType: path.includes('/export') ? 'arraybuffer' : 'json',
       validateStatus: () => true, // don't throw on 4xx/5xx
     });

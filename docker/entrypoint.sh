@@ -42,8 +42,36 @@ cd /opt/app
 tail -f /tmp/engine.log /tmp/server.log &
 TAIL_PID=$!
 
-# ── 5. Propagate signals; exit if either child dies ──────────────────────
-trap 'kill $ENGINE_PID $SERVER_PID $TAIL_PID 2>/dev/null; wait; exit 0' TERM INT
+# ── 5. Propagate signals; gracefully shut down children on TERM/INT ──────
+GRACE_SECONDS="${SHUTDOWN_GRACE_SECONDS:-20}"
+
+graceful_stop() {
+    local sig="${1:-TERM}"
+    echo "[entrypoint] received $sig — sending SIGTERM to children (grace ${GRACE_SECONDS}s)"
+    # Send SIGTERM so Express + Spring can flush + close DB cleanly
+    kill -TERM "$SERVER_PID" 2>/dev/null || true
+    kill -TERM "$ENGINE_PID" 2>/dev/null || true
+
+    # Wait up to grace period for children to exit
+    local waited=0
+    while [ $waited -lt $GRACE_SECONDS ]; do
+        local alive=0
+        kill -0 "$SERVER_PID" 2>/dev/null && alive=1
+        kill -0 "$ENGINE_PID" 2>/dev/null && alive=1
+        [ $alive -eq 0 ] && break
+        sleep 1
+        waited=$((waited+1))
+    done
+
+    # Force-kill any survivors
+    kill -KILL "$SERVER_PID" 2>/dev/null || true
+    kill -KILL "$ENGINE_PID" 2>/dev/null || true
+    kill -KILL "$TAIL_PID"   2>/dev/null || true
+    echo "[entrypoint] shutdown complete after ${waited}s"
+    exit 0
+}
+trap 'graceful_stop TERM' TERM
+trap 'graceful_stop INT'  INT
 
 while true; do
     if ! kill -0 "$ENGINE_PID" 2>/dev/null; then

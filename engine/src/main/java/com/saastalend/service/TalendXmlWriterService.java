@@ -305,7 +305,9 @@ public class TalendXmlWriterService {
                 paramEl.addAttribute("field",
                         param.getField() != null ? param.getField().name() : "TEXT");
                 paramEl.addAttribute("name", param.getName());
-                paramEl.addAttribute("value", param.getValue() != null ? param.getValue() : "");
+                paramEl.addAttribute("value",
+                        com.saastalend.generator.TDBRowGenerator.stripInvalidXmlChars(
+                                param.getValue() != null ? param.getValue() : ""));
                 if (!param.isShow()) {
                     paramEl.addAttribute("show", "false");
                 }

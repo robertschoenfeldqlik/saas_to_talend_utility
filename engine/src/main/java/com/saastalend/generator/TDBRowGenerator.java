@@ -35,7 +35,12 @@ public final class TDBRowGenerator {
         params.add(param("TEXT", "PASS", "context.DB_PASSWORD"));
 
         String rawSql = model != null && model.getSql() != null ? model.getSql() : "";
-        String quoted = "\"" + escapeSqlForJava(rawSql) + "\"";
+        // Two-layer defense: strip invalid XML 1.0 control chars first,
+        // then escape for the Java string literal that Talend evaluates at runtime.
+        // (XML attribute escaping of &, <, >, " is handled by dom4j when writing
+        // the value attribute, so we don't double-encode it here.)
+        String safe = stripInvalidXmlChars(rawSql);
+        String quoted = "\"" + escapeSqlForJava(safe) + "\"";
         params.add(param("MEMO", "QUERY", quoted));
 
         params.add(param("CHECK", "DIE_ON_ERROR", "false"));
@@ -65,6 +70,27 @@ public final class TDBRowGenerator {
                 .replace("\r\n", "\\n")
                 .replace("\n", "\\n")
                 .replace("\r", "\\n");
+    }
+
+    /**
+     * Strips characters that are illegal in XML 1.0. Valid: tab, LF, CR, and
+     * any code point in 0x20-0xD7FF / 0xE000-0xFFFD / 0x10000-0x10FFFF. Anything
+     * else (NUL, control chars, surrogate halves) would corrupt the .item file
+     * when dom4j writes the attribute and is silently dropped here.
+     */
+    public static String stripInvalidXmlChars(String s) {
+        if (s == null || s.isEmpty()) return s == null ? "" : s;
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == 0x9 || c == 0xA || c == 0xD
+                    || (c >= 0x20 && c <= 0xD7FF)
+                    || (c >= 0xE000 && c <= 0xFFFD)) {
+                sb.append(c);
+            }
+            // surrogate halves and other illegal chars are dropped
+        }
+        return sb.toString();
     }
 
     private static TalendElementParameter param(String field, String name, String value) {

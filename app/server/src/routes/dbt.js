@@ -183,17 +183,71 @@ function parseDbtEntries(entries) {
 
 // ─────────── 1) Upload ZIP ───────────
 
+// ZIP slip / decompression-bomb guards
+const MAX_ZIP_ENTRIES = 5000;          // refuse pathological many-file archives
+const MAX_DECOMPRESSED_BYTES = 200 * 1024 * 1024; // 200 MB total uncompressed
+const MAX_ENTRY_BYTES = 10 * 1024 * 1024;          // 10 MB per individual file
+
+/**
+ * Returns true if a ZIP entry name is unsafe (absolute path, traversal,
+ * Windows drive prefix, NUL byte, or backslash component) — any entry that
+ * could escape the intended virtual root.
+ */
+function isUnsafeZipPath(entryName) {
+  if (!entryName) return true;
+  if (entryName.includes('\0')) return true;
+  // Reject absolute paths
+  if (entryName.startsWith('/') || /^[A-Za-z]:[\\/]/.test(entryName)) return true;
+  // Normalize separators and split
+  const parts = entryName.replace(/\\/g, '/').split('/');
+  return parts.some((p) => p === '..');
+}
+
 router.post('/upload-zip', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded (field "file")' });
     const zip = new AdmZip(req.file.buffer);
     const zipEntries = zip.getEntries();
+
+    if (zipEntries.length > MAX_ZIP_ENTRIES) {
+      return res.status(413).json({
+        error: `ZIP has too many entries (${zipEntries.length}); limit is ${MAX_ZIP_ENTRIES}.`,
+      });
+    }
+
+    let totalDecompressed = 0;
+    const skipped = [];
     let entries = [];
     for (const ze of zipEntries) {
       if (ze.isDirectory) continue;
+
+      // Path-traversal / absolute-path / NUL-byte guard
+      if (isUnsafeZipPath(ze.entryName)) {
+        skipped.push({ path: ze.entryName, reason: 'unsafe path' });
+        continue;
+      }
+
+      // Per-entry size guard (zip-bomb defense)
+      const declaredSize = ze.header && ze.header.size ? ze.header.size : 0;
+      if (declaredSize > MAX_ENTRY_BYTES) {
+        skipped.push({ path: ze.entryName, reason: 'entry too large' });
+        continue;
+      }
+
       let content = '';
       try {
-        content = ze.getData().toString('utf8');
+        const buf = ze.getData();
+        if (buf.length > MAX_ENTRY_BYTES) {
+          skipped.push({ path: ze.entryName, reason: 'entry too large' });
+          continue;
+        }
+        totalDecompressed += buf.length;
+        if (totalDecompressed > MAX_DECOMPRESSED_BYTES) {
+          return res.status(413).json({
+            error: `Total decompressed size exceeds ${MAX_DECOMPRESSED_BYTES} bytes (zip-bomb guard).`,
+          });
+        }
+        content = buf.toString('utf8');
       } catch {
         continue;
       }
@@ -201,10 +255,11 @@ router.post('/upload-zip', upload.single('file'), async (req, res) => {
     }
     entries = stripCommonPrefix(entries);
     const result = parseDbtEntries(entries);
+    if (skipped.length) result.skippedEntries = skipped;
     res.json(result);
   } catch (err) {
-    logger.error({ err }, 'upload-zip failed');
-    res.status(500).json({ error: err.message || 'Failed to parse ZIP' });
+    logger.error({ msg: err.message }, 'upload-zip failed');
+    res.status(500).json({ error: 'Failed to parse ZIP' });
   }
 });
 

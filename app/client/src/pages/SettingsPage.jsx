@@ -42,11 +42,22 @@ export default function SettingsPage() {
   // AI settings
   const [aiProvider, setAiProvider] = useState('ollama');
   const [aiApiKey, setAiApiKey] = useState('');
+  // Track whether the field currently shows a masked key from the server.
+  // If the user doesn't change it, we DON'T send it back — otherwise we'd
+  // overwrite the real in-memory key with the redacted "sk-...aaaa" form.
+  const [aiApiKeyIsMasked, setAiApiKeyIsMasked] = useState(false);
   const [aiModel, setAiModel] = useState('');
   const [aiBaseUrl, setAiBaseUrl] = useState('');
   const [aiSaving, setAiSaving] = useState(false);
   const [aiTesting, setAiTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+
+  // Pattern matches the server's GET /settings redaction format.
+  const isRedactedKey = (s) => {
+    if (!s) return false;
+    if (s === '****') return true;
+    return /^.{1,12}\.\.\..{1,8}$/.test(s);
+  };
 
   useEffect(() => {
     checkEngine();
@@ -67,21 +78,32 @@ export default function SettingsPage() {
     try {
       const settings = await getAiSettings();
       if (settings.provider) setAiProvider(settings.provider);
-      if (settings.apiKey) setAiApiKey(settings.apiKey);
       if (settings.model) setAiModel(settings.model);
       if (settings.baseUrl) setAiBaseUrl(settings.baseUrl);
+      if (settings.apiKey) {
+        setAiApiKey(settings.apiKey);
+        setAiApiKeyIsMasked(isRedactedKey(settings.apiKey));
+      } else {
+        setAiApiKey('');
+        setAiApiKeyIsMasked(false);
+      }
     } catch {}
   };
 
   const saveAiSettings = async () => {
     setAiSaving(true);
     try {
-      await updateAiSettings({
+      const payload = {
         provider: aiProvider,
-        apiKey: aiApiKey,
         model: aiModel,
         baseUrl: aiBaseUrl,
-      });
+      };
+      // Only send the apiKey if the user typed a NEW value
+      // (i.e. it's not the masked placeholder we got from the server).
+      if (aiApiKey && !aiApiKeyIsMasked) {
+        payload.apiKey = aiApiKey;
+      }
+      await updateAiSettings(payload);
       setTestResult({ type: 'success', msg: 'Settings saved' });
     } catch (err) {
       setTestResult({ type: 'error', msg: 'Failed to save settings' });
@@ -221,7 +243,8 @@ export default function SettingsPage() {
               <input
                 type="password"
                 value={aiApiKey}
-                onChange={(e) => setAiApiKey(e.target.value)}
+                onChange={(e) => { setAiApiKey(e.target.value); setAiApiKeyIsMasked(false); }}
+                onFocus={(e) => { if (aiApiKeyIsMasked) { setAiApiKey(''); setAiApiKeyIsMasked(false); } }}
                 placeholder={`Enter ${currentProvider.name} API key`}
                 className="input"
               />

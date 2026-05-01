@@ -67,4 +67,38 @@ const server = app.listen(PORT, HOST, () => {
   logger.info({ host: HOST, port: PORT }, 'SaaS-to-Talend server started');
 });
 
+// ─── Graceful shutdown ──────────────────────────────────────────────────────
+// On SIGTERM (Docker stop) or SIGINT (Ctrl-C), stop accepting new connections,
+// allow in-flight requests up to GRACE_MS, then exit. Without this, Docker
+// kills mid-request and SQLite may close dirty.
+const GRACE_MS = parseInt(process.env.SHUTDOWN_GRACE_MS || '15000', 10);
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal, graceMs: GRACE_MS }, 'Shutdown signal received — closing server');
+
+  const forceExitTimer = setTimeout(() => {
+    logger.warn('Grace period expired — forcing exit');
+    process.exit(1);
+  }, GRACE_MS);
+  forceExitTimer.unref();
+
+  server.close((err) => {
+    if (err) {
+      logger.error({ err: err.message }, 'Error closing server');
+      process.exit(1);
+    }
+    logger.info('Server closed cleanly');
+    process.exit(0);
+  });
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
+// Surface unhandled rejections instead of silently swallowing them
+process.on('unhandledRejection', (reason) => {
+  logger.error({ reason: String(reason) }, 'Unhandled promise rejection');
+});
+
 module.exports = server;

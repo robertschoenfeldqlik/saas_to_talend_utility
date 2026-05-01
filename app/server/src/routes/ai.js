@@ -6,36 +6,70 @@ const logger = require('../logger');
 
 const router = express.Router();
 
-// ─── Persisted AI settings ──────────────────────────────────────────────────
+// ─── AI settings ────────────────────────────────────────────────────────────
+//
+// Security: the API key is NEVER persisted to disk. Provider + model + baseUrl
+// (non-secret config) are persisted; the key must be supplied via env var
+// (OPENAI_API_KEY / ANTHROPIC_API_KEY) or set per-session via PUT /api/ai/settings
+// (kept in process memory only).
+//
+// On startup, if a legacy ai-settings.json contains an apiKey field, we MIGRATE
+// it: keep provider/model/baseUrl, drop the key, and scrub the file.
+//
 const SETTINGS_PATH = path.join(__dirname, '..', '..', 'data', 'ai-settings.json');
 
 let aiSettings = {
-  provider: 'ollama',     // ollama | openai | anthropic
-  apiKey: '',
+  provider: process.env.AI_PROVIDER || 'ollama', // ollama | openai | anthropic
+  apiKey: '', // never persisted — process-memory + env only
   model: '',
   baseUrl: '',
 };
 
-// Load settings from disk on startup
-try {
-  if (fs.existsSync(SETTINGS_PATH)) {
+function envApiKey(provider) {
+  if (provider === 'openai') return process.env.OPENAI_API_KEY || '';
+  if (provider === 'anthropic') return process.env.ANTHROPIC_API_KEY || '';
+  return ''; // ollama doesn't use a key
+}
+
+function loadSettings() {
+  try {
+    if (!fs.existsSync(SETTINGS_PATH)) return;
     const loaded = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
-    aiSettings = { ...aiSettings, ...loaded };
-    logger.info({ provider: aiSettings.provider, model: aiSettings.model }, 'Loaded AI settings from disk');
+    const hadKey = !!loaded.apiKey;
+    aiSettings.provider = loaded.provider || aiSettings.provider;
+    aiSettings.model = loaded.model || '';
+    aiSettings.baseUrl = loaded.baseUrl || '';
+    if (hadKey) {
+      logger.warn('Found legacy apiKey in ai-settings.json — scrubbing. Use env var OPENAI_API_KEY / ANTHROPIC_API_KEY instead.');
+      saveSettings(); // rewrite without the key
+    } else {
+      logger.info({ provider: aiSettings.provider, model: aiSettings.model }, 'Loaded AI settings from disk (key not persisted)');
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, 'Failed to load AI settings — using defaults');
   }
-} catch (err) {
-  logger.warn({ err: err.message }, 'Failed to load AI settings — using defaults');
+
+  // Pull key from env if available
+  const k = envApiKey(aiSettings.provider);
+  if (k) {
+    aiSettings.apiKey = k;
+    logger.info({ provider: aiSettings.provider }, 'Loaded AI key from env var');
+  }
 }
 
 function saveSettings() {
   try {
     const dir = path.dirname(SETTINGS_PATH);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(aiSettings, null, 2), 'utf8');
+    // EXCLUDE apiKey from disk persistence
+    const { apiKey, ...persistable } = aiSettings;
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(persistable, null, 2), 'utf8');
   } catch (err) {
     logger.error({ err: err.message }, 'Failed to persist AI settings');
   }
 }
+
+loadSettings();
 
 // ─── LLM Provider Adapters ──────────────────────────────────────────────────
 
@@ -736,15 +770,41 @@ router.get('/settings', (req, res) => {
   res.json(settings);
 });
 
-// PUT /api/ai/settings — Update AI provider settings
+// Detect a redacted/masked key returned by GET /settings ("xxxxxxxx...yyyy" or "****")
+// so we don't accidentally save it back as the real value.
+function isMaskedKey(s) {
+  if (!s) return false;
+  if (s === '****') return true;
+  // Format from GET: first 8 chars + '...' + last 4 chars
+  return /^.{1,12}\.\.\..{1,8}$/.test(s);
+}
+
+// PUT /api/ai/settings — Update AI provider settings (key is in-memory only)
 router.put('/settings', (req, res) => {
   const { provider, apiKey, model, baseUrl } = req.body;
+
+  // Cap input lengths to prevent DoS via giant strings
+  if (apiKey && apiKey.length > 500) {
+    return res.status(400).json({ error: 'apiKey too long' });
+  }
+  if (provider && !['ollama', 'openai', 'anthropic'].includes(provider)) {
+    return res.status(400).json({ error: `Unknown provider: ${provider}` });
+  }
+
   if (provider) aiSettings.provider = provider;
-  if (apiKey !== undefined) aiSettings.apiKey = apiKey;
   if (model !== undefined) aiSettings.model = model;
   if (baseUrl !== undefined) aiSettings.baseUrl = baseUrl;
-  saveSettings();
-  logger.info({ provider: aiSettings.provider, model: aiSettings.model }, 'AI settings updated and persisted');
+
+  // KEY HANDLING: only update if a non-redacted, non-empty value is provided.
+  // This prevents the masked GET response from overwriting the real key.
+  if (apiKey !== undefined && apiKey !== '' && !isMaskedKey(apiKey)) {
+    aiSettings.apiKey = apiKey;
+    logger.info({ provider: aiSettings.provider }, 'AI key updated in memory');
+  }
+
+  saveSettings(); // persists provider/model/baseUrl ONLY (key is excluded)
+  logger.info({ provider: aiSettings.provider, model: aiSettings.model },
+              'AI settings updated (provider+model+baseUrl persisted; key in-memory only)');
   res.json({ success: true });
 });
 
