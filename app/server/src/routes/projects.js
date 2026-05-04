@@ -267,8 +267,10 @@ router.post('/export', async (req, res) => {
     if (!projectName || !Array.isArray(jobIds) || jobIds.length === 0) {
       return res.status(400).json({ error: 'projectName and jobIds[] required' });
     }
-    const useTarGz = !format
-      || ['tar.gz', 'targz', 'tgz'].includes(String(format).toLowerCase());
+    // Default: ZIP. Talend Studio 8.0.1's "Import existing project" wizard
+    // accepts a ZIP that contains a folder with an Eclipse `.project` marker
+    // file. tar.gz is offered as an opt-in.
+    const useTarGz = format && ['tar.gz', 'targz', 'tgz'].includes(String(format).toLowerCase());
 
     // 1) Load jobs + their parent projects from SQLite
     const placeholders = jobIds.map(() => '?').join(',');

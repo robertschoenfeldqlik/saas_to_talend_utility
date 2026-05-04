@@ -165,69 +165,82 @@ public class TalendXmlWriterService {
         return formatXml(document);
     }
 
+    /** Full product version string Talend Studio embeds in .properties metadata. */
+    private static final String PRODUCT_FULLNAME = "Talend Open Studio for Data Integration";
+    private static final String PRODUCT_VERSION = "8.0.1";
+
     /**
-     * Generates the .properties XML for a Talend job.
+     * Generates the .properties XML for a Talend job, matching the format Talend
+     * Studio 8.0.1 writes natively.
      *
-     * Talend Studio's importer is strict about XMI cross-references:
-     *   - ProcessItem.property MUST resolve to Property.xmi:id
-     *   - ProcessItem.state    MUST resolve to ItemState.xmi:id
-     *   - author.href ../talend.project#X MUST resolve to Project.xmi:id
-     *   - additionalProperties.value MUST equal Project.technicalLabel
+     * Real Talend .properties (from a working dynamics_fo project) has:
+     *   - Property xmi:id = mechanical id (referenced by ProcessItem.property)
+     *   - Property id     = SECOND id attr (different from xmi:id) — required
+     *   - author href     = ../talend.project#<UserXmiId>  (NOT project's xmi:id)
+     *   - additionalProperties: created_product_fullname, created_product_version,
+     *     created_date — NOT "project.technical.name" (that's elsewhere)
+     *   - ItemState.path  = subfolder under process/ ("" for root)
      *
-     * IMPORTANT: dom4j's addAttribute(String,...) and addAttribute(QName,...)
-     * collide on local-name "id" — calling both leaves only the second one.
-     * We use unique attribute names so that doesn't happen, and we accept the
-     * project xmi:id from the caller so the cross-file reference resolves.
+     * Cross-file cross-refs that MUST resolve for import to succeed:
+     *   ProcessItem.property == Property.xmi:id
+     *   ProcessItem.state    == ItemState.xmi:id
+     *   ProcessItem.xmi:id   == Property.item
+     *   author href fragment == User.xmi:id (in talend.project)
      */
     public String writePropertiesXml(TalendJob job, String projectTechLabel,
-                                     String projectXmiId) {
+                                     String projectXmiId, String userXmiId) {
         Document document = DocumentHelper.createDocument();
 
         Namespace xmiNs = new Namespace("xmi", XMI_NS);
         Namespace tpNs = new Namespace("TalendProperties", TALEND_PROPS_NS);
 
-        // Root: xmi:XMI wrapper (required for Talend import)
+        // Root order matches real Talend: xmi:version first, then xmlns:xmi, xmlns:TalendProperties
         Element root = document.addElement(new QName("XMI", xmiNs));
         root.add(tpNs);
         root.addAttribute(new QName("version", xmiNs), "2.0");
 
-        String propId = "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        String itemStateId = "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        String processItemId = "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        // Talend Studio's "human" id for the item — visible in repository as the property id
-        String humanId = job.getId() != null ? job.getId() : UUID.randomUUID().toString();
+        // Use SHORT 20-hex-char ids like real Talend (not 24)
+        String propId        = "_" + shortId();
+        String secondaryId   = "_" + shortId(); // the unnamespaced "id" attribute on Property
+        String itemStateId   = "_" + shortId();
+        String processItemId = "_" + shortId();
 
-        String now = Instant.now().atOffset(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
-
-        // Property element — xmi:id is the XMI mechanical id (referenced by ProcessItem.property)
+        // Property element. We deliberately use the dom4j "addAttribute(QName)" call
+        // for both ids so they don't collide on local name in the same way the old
+        // code did. The key is to give them DIFFERENT QNames (xmi:id vs id-with-no-ns).
         Element property = root.addElement(new QName("Property", tpNs));
         property.addAttribute(new QName("id", xmiNs), propId);
+        // The "id" attribute (no namespace) is added directly on the underlying
+        // element object via DOM rather than dom4j's addAttribute, to avoid
+        // dom4j's local-name collision behaviour overwriting xmi:id.
+        property.addAttribute(QName.get("id"), secondaryId);
         property.addAttribute("label", job.getName());
-        property.addAttribute("purpose", job.getDescription() != null ? job.getDescription() : "");
-        property.addAttribute("description", job.getDescription() != null ? job.getDescription() : "");
-        property.addAttribute("creationDate", now);
-        property.addAttribute("modificationDate", now);
         property.addAttribute("version", "0.1");
         property.addAttribute("statusCode", "");
         property.addAttribute("item", processItemId);
         property.addAttribute("displayName", job.getName());
 
-        // Author reference — points to the project's xmi:id in talend.project
+        // Author reference — Talend resolves to the User element in talend.project
         Element author = property.addElement("author");
-        author.addAttribute("href", "../talend.project#" + projectXmiId);
+        // Path goes up from process/<jobName>_0.1.properties to the project root
+        author.addAttribute("href", "../../talend.project#" + userXmiId);
 
-        // Additional properties
-        Element addlProps = property.addElement("additionalProperties");
-        addlProps.addAttribute("key", "project.technical.name");
-        addlProps.addAttribute("value", projectTechLabel != null ? projectTechLabel : "SAAS_TALEND");
+        // Real Talend additionalProperties: 3 entries with metadata, each having its own xmi:id
+        String now = Instant.now().atOffset(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxx"));
+        addAdditionalProperty(property, xmiNs, propId + "_p1",
+                "created_product_fullname", PRODUCT_FULLNAME);
+        addAdditionalProperty(property, xmiNs, propId + "_p2",
+                "created_product_version", PRODUCT_VERSION);
+        addAdditionalProperty(property, xmiNs, propId + "_p3",
+                "created_date", now);
 
-        // ItemState element
+        // ItemState — path is the subfolder under process/ for grouping; root = ""
         Element itemState = root.addElement(new QName("ItemState", tpNs));
         itemState.addAttribute(new QName("id", xmiNs), itemStateId);
         itemState.addAttribute("path", "");
 
-        // ProcessItem element (links property → item file)
+        // ProcessItem — links Property + ItemState + .item file
         Element processItem = root.addElement(new QName("ProcessItem", tpNs));
         processItem.addAttribute(new QName("id", xmiNs), processItemId);
         processItem.addAttribute("property", propId);
@@ -240,18 +253,44 @@ public class TalendXmlWriterService {
     }
 
     /**
-     * Holds the talend.project XML plus the project's xmi:id so callers
-     * (e.g. WorkspaceExporterService) can wire properties files'
-     * author href to the same project ID.
+     * Backward-compatible 3-arg overload (no userXmiId) — falls back to a
+     * stable User id derived from the project xmi:id so author hrefs still resolve.
+     */
+    public String writePropertiesXml(TalendJob job, String projectTechLabel,
+                                     String projectXmiId) {
+        return writePropertiesXml(job, projectTechLabel, projectXmiId,
+                projectXmiId + "_user");
+    }
+
+    private static void addAdditionalProperty(Element parent, Namespace xmiNs,
+                                              String xmiId, String key, String value) {
+        Element ap = parent.addElement("additionalProperties");
+        ap.addAttribute(new QName("id", xmiNs), xmiId);
+        ap.addAttribute("key", key);
+        ap.addAttribute("value", value);
+    }
+
+    /** Generate a 20-char hex id matching Talend's format. */
+    private static String shortId() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+    }
+
+    /**
+     * Holds the talend.project XML plus the project's xmi:id, user's xmi:id,
+     * and technical label so callers (e.g. WorkspaceExporterService) can wire
+     * properties files' author hrefs back to the User element in talend.project.
      */
     public static class ProjectXml {
         public final String xml;
         public final String projectXmiId;
+        public final String userXmiId;
         public final String technicalLabel;
 
-        public ProjectXml(String xml, String projectXmiId, String technicalLabel) {
+        public ProjectXml(String xml, String projectXmiId, String userXmiId,
+                          String technicalLabel) {
             this.xml = xml;
             this.projectXmiId = projectXmiId;
+            this.userXmiId = userXmiId;
             this.technicalLabel = technicalLabel;
         }
     }
@@ -264,9 +303,15 @@ public class TalendXmlWriterService {
     }
 
     /**
-     * Generates the talend.project XML for a Talend workspace.
-     * Returns the XML body plus the generated project xmi:id and technical label
-     * so other writers can produce coherent cross-references.
+     * Generates the talend.project XML matching the format Talend Studio 8.0.1
+     * writes natively. Critical differences from the previous version:
+     *   - <Project> needs local="true", author=<UserXmiId>, type="DI",
+     *     itemsRelationVersion="1.3", productVersion="<full string>"
+     *   - <technicalStatus> and <folders> are NOT in talend.project — they live
+     *     in .settings/project.settings as JSON
+     *   - A sibling <User> element MUST exist; .properties files reference it
+     *     via author href fragment
+     *   - <migrationTask> child documents the schema version
      */
     public ProjectXml writeTalendProjectXmlWithId(String projectName) {
         Document document = DocumentHelper.createDocument();
@@ -274,53 +319,118 @@ public class TalendXmlWriterService {
         Namespace xmiNs = new Namespace("xmi", XMI_NS);
         Namespace tpNs = new Namespace("TalendProperties", TALEND_PROPS_NS);
 
-        // Root: xmi:XMI wrapper
         Element root = document.addElement(new QName("XMI", xmiNs));
         root.add(tpNs);
         root.addAttribute(new QName("version", xmiNs), "2.0");
 
-        String projectXmiId = "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-
-        String now = Instant.now().atOffset(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        String projectXmiId = "_" + shortId();
+        String userXmiId    = "_" + shortId();
+        String migXmiId     = "_" + shortId();
 
         String techLabel = projectName.toUpperCase().replaceAll("[^A-Z0-9_]", "_");
 
         Element project = root.addElement(new QName("Project", tpNs));
         project.addAttribute(new QName("id", xmiNs), projectXmiId);
-        project.addAttribute("technicalLabel", techLabel);
         project.addAttribute("label", projectName);
         project.addAttribute("description", "Generated by SaaS to Talend Engine");
         project.addAttribute("language", "java");
-        project.addAttribute("productVersion", "8.0.1");
-        project.addAttribute("creationDate", now);
-        project.addAttribute("migrated", "true");
-        project.addAttribute("masterJobId", "");
+        project.addAttribute("technicalLabel", techLabel);
+        project.addAttribute("local", "true");
+        project.addAttribute("author", userXmiId);
+        project.addAttribute("productVersion",
+                "Talend Open Studio for Data Integration-" + PRODUCT_VERSION);
+        project.addAttribute("type", "DI");
+        project.addAttribute("itemsRelationVersion", "1.3");
 
-        // Technical status list (required for import)
-        Element techStatus = project.addElement("technicalStatus");
-        techStatus.addAttribute("code", "DEV");
-        techStatus.addAttribute("label", "development");
+        // Migration task — declares which schema version this project was
+        // created with. Real Talend embeds many of these; one minimal stub
+        // is enough for import. Use QName.get("id") for the unnamespaced "id"
+        // attribute to avoid dom4j's local-name collision with xmi:id.
+        Element migration = project.addElement("migrationTask");
+        migration.addAttribute(new QName("id", xmiNs), migXmiId);
+        migration.addAttribute(QName.get("id"),
+                "org.talend.repository.model.migration.CheckProductVersionMigrationTask");
+        migration.addAttribute("breaks", "7.1.0");
+        migration.addAttribute("version", "7.1.1");
 
-        Element techStatus2 = project.addElement("technicalStatus");
-        techStatus2.addAttribute("code", "PROD");
-        techStatus2.addAttribute("label", "production");
+        // Sibling User element — author hrefs in .properties files resolve here
+        Element user = root.addElement(new QName("User", tpNs));
+        user.addAttribute(new QName("id", xmiNs), userXmiId);
+        user.addAttribute("login", "saas-to-talend@local");
 
-        Element techStatus3 = project.addElement("technicalStatus");
-        techStatus3.addAttribute("code", "TEST");
-        techStatus3.addAttribute("label", "testing");
+        return new ProjectXml(formatXml(document), projectXmiId, userXmiId, techLabel);
+    }
 
-        // Component setting (required folder list)
-        for (String folder : new String[]{
-                "process", "context", "code/routines", "code/routines/system",
-                "metadata/connections", "metadata/file", "metadata/sapconnections",
-                "metadata/header_footer"}) {
-            Element folderEl = project.addElement("folders");
-            folderEl.addAttribute("label", folder);
-            folderEl.addAttribute("type", "FOLDER");
-        }
+    /**
+     * Generates the Eclipse .project marker file. THIS IS WHAT THE TALEND
+     * STUDIO IMPORT WIZARD SCANS FOR — without it, the wizard won't recognize
+     * the archive as containing an importable project.
+     *
+     * Format is the Eclipse projectDescription with the org.talend.core.talendnature
+     * applied so Studio knows it's a Talend project.
+     */
+    public String writeEclipseProjectXml(String technicalLabel) {
+        Document doc = DocumentHelper.createDocument();
+        Element root = doc.addElement("projectDescription");
+        root.addElement("name").setText(technicalLabel);
+        root.addElement("comment");
+        root.addElement("projects");
+        root.addElement("buildSpec");
+        Element natures = root.addElement("natures");
+        Element nature = natures.addElement("nature");
+        nature.setText("org.talend.core.talendnature");
+        return formatXml(doc);
+    }
 
-        return new ProjectXml(formatXml(document), projectXmiId, techLabel);
+    /**
+     * Generates the .settings/project.settings JSON Talend Studio expects
+     * (technicalStatus, documentationStatus, statAndLogsSettings, implicitContextSettings).
+     * Format mirrors a real Talend export verbatim so import never fails on parse.
+     */
+    public String writeProjectSettingsJson() {
+        return "{\n"
+            + "  \"technicalStatus\" : [ "
+            + "{ \"label\" : \"development\", \"code\" : \"DEV\" }, "
+            + "{ \"label\" : \"testing\", \"code\" : \"TEST\" }, "
+            + "{ \"label\" : \"production\", \"code\" : \"PROD\" } ],\n"
+            + "  \"documentationStatus\" : [ "
+            + "{ \"label\" : \"unchecked\", \"code\" : \"UCK\" }, "
+            + "{ \"label\" : \"checked\", \"code\" : \"CHK\" }, "
+            + "{ \"label\" : \"validated\", \"code\" : \"VAL\" } ],\n"
+            + "  \"statAndLogsSettings\" : { \"parameters\" : { \"elementParameter\" : [ "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"ON_STATCATCHER_FLAG\", \"value\" : \"false\", \"contextMode\" : false }, "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"ON_LOGCATCHER_FLAG\", \"value\" : \"false\", \"contextMode\" : false }, "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"ON_CONSOLE_FLAG\", \"value\" : \"false\", \"contextMode\" : false }, "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"ON_FILES_FLAG\", \"value\" : \"false\", \"contextMode\" : false }, "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"ON_DATABASE_FLAG\", \"value\" : \"false\", \"contextMode\" : false } "
+            + "] } },\n"
+            + "  \"implicitContextSettings\" : { \"parameters\" : { \"elementParameter\" : [ "
+            + "{ \"show\" : true, \"field\" : \"CHECK\", \"name\" : \"IMPLICIT_TCONTEXTLOAD\", \"value\" : \"false\", \"contextMode\" : false } "
+            + "] } }\n"
+            + "}\n";
+    }
+
+    /** Eclipse encoding preference — UTF-8 for the entire project. */
+    public String writeEclipseEncodingPrefs() {
+        return "eclipse.preferences.version=1\nencoding/<project>=UTF-8\n";
+    }
+
+    /** Talend repository preferences — minimal stub. */
+    public String writeTalendRepoPrefs() {
+        return "eclipse.preferences.version=1\n";
+    }
+
+    /** Maven preferences for generated job code. */
+    public String writeMavenPrefs() {
+        return "PROJECT_GROUPID=org.example.local\n"
+             + "PROJECT_VERSION=" + PRODUCT_VERSION + "\n"
+             + "SKIP_LOOP_DEPENDENCY_CHECK=true\n"
+             + "eclipse.preferences.version=1\n";
+    }
+
+    /** Empty relationship index — Talend rebuilds on first open. */
+    public String writeRelationshipIndex() {
+        return "[ ]\n";
     }
 
     // ── Internal helpers ──

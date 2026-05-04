@@ -77,9 +77,9 @@ export default function ExportWizard() {
     setExportError(null);
     try {
       const jobIds = Array.from(selectedJobs);
-      // tar.gz is what Talend Studio 8.0.1's "Import existing project"
-      // wizard accepts. .zip is rejected at the file picker.
-      const blob = await exportProjectJobs({ projectName, jobIds, format: 'tar.gz' });
+      // ZIP is the format Talend Studio's "Import existing project" wizard
+      // accepts when the archive contains an Eclipse .project marker inside.
+      const blob = await exportProjectJobs({ projectName, jobIds, format: 'zip' });
 
       if (!(blob instanceof Blob) || blob.size < 100) {
         throw new Error('Server returned an empty or invalid archive');
@@ -89,7 +89,7 @@ export default function ExportWizard() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${projectName.replace(/\s+/g, '_')}_workspace.tar.gz`;
+      a.download = `${projectName.replace(/\s+/g, '_')}_workspace.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -146,7 +146,7 @@ export default function ExportWizard() {
             <Package className="w-5 h-5 text-brand-500" />
             <div>
               <div className="text-sm font-medium" style={{ color: 'rgb(var(--color-text))' }}>
-                Talend Workspace (.tar.gz)
+                Talend Workspace ZIP
               </div>
               <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>
                 For Talend Studio 8.0.1: File → Import existing project → Select archive

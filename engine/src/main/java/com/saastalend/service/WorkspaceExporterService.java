@@ -61,57 +61,19 @@ public class WorkspaceExporterService {
      */
     public byte[] exportWorkspace(String projectName, List<TalendJob> jobs,
                                     Map<String, String> extraFiles) {
-        String projectDir = sanitizeProjectDir(projectName);
+        // Both formats now share the same canonical entry list (built by
+        // buildEntries). This guarantees ZIP and tar.gz contain the same
+        // files in the same locations.
+        List<Entry> entries = buildEntries(projectName, jobs, extraFiles);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
-            // ── talend.project (project root) ──
-            // We need the generated xmi:id and technical label so each .properties
-            // file's <author href="../talend.project#XXXX"/> resolves to the same
-            // project, and additionalProperties.value matches the technicalLabel.
-            TalendXmlWriterService.ProjectXml projectXml =
-                    xmlWriter.writeTalendProjectXmlWithId(projectName);
-            addZipEntry(zos, projectDir + "/talend.project", projectXml.xml);
-
-            // ── Required empty directories (Talend expects these to exist) ──
-            addEmptyDir(zos, projectDir + "/process/");
-            addEmptyDir(zos, projectDir + "/context/");
-            addEmptyDir(zos, projectDir + "/code/routines/");
-            addEmptyDir(zos, projectDir + "/code/routines/system/");
-            addEmptyDir(zos, projectDir + "/metadata/connections/");
-            addEmptyDir(zos, projectDir + "/metadata/file/");
-            addEmptyDir(zos, projectDir + "/metadata/sapconnections/");
-            addEmptyDir(zos, projectDir + "/metadata/header_footer/");
-            addEmptyDir(zos, projectDir + "/temp/");
-
-            // ── Job files ──
-            if (jobs != null) {
-                for (TalendJob job : jobs) {
-                    String jobName = job.getName();
-                    String basePath = projectDir + "/process/" + jobName + "_0.1";
-
-                    // .item file (job process XML)
-                    String itemXml = xmlWriter.writeItemXml(job);
-                    addZipEntry(zos, basePath + ".item", itemXml);
-
-                    // .properties file — passes the project xmi:id + tech label
-                    // so cross-file XMI references resolve correctly.
-                    String propsXml = xmlWriter.writePropertiesXml(
-                            job, projectXml.technicalLabel, projectXml.projectXmiId);
-                    addZipEntry(zos, basePath + ".properties", propsXml);
-                }
-            }
-
-            // ── Extra files (dbt models, etc.) — nested under project folder ──
-            if (extraFiles != null) {
-                for (Map.Entry<String, String> e : extraFiles.entrySet()) {
-                    String relPath = e.getKey();
-                    if (relPath == null || relPath.isBlank()) continue;
-                    // Strip any leading slash
-                    if (relPath.startsWith("/")) relPath = relPath.substring(1);
-                    String fullPath = projectDir + "/" + relPath;
-                    addZipEntry(zos, fullPath, e.getValue() != null ? e.getValue() : "");
+            for (Entry e : entries) {
+                if (e.content == null) {
+                    addEmptyDir(zos, e.path);
+                } else {
+                    addZipEntry(zos, e.path, e.content);
                 }
             }
 
@@ -166,18 +128,53 @@ public class WorkspaceExporterService {
     /**
      * Builds the canonical entry list for a workspace, used by both the .zip
      * and .tar.gz exporters so the two formats stay in sync.
+     *
+     * Layout matches a real Talend Studio 8.0.1 project export so the
+     * "Import existing project" wizard recognizes it:
+     *   ProjectName/
+     *     .project                 <- Eclipse marker; wizard scans for this
+     *     talend.project           <- Talend project metadata + User
+     *     .settings/
+     *       project.settings       <- technicalStatus / log settings JSON
+     *       org.eclipse.core.resources.prefs
+     *       org.talend.repository.prefs
+     *       org.talend.designer.maven.prefs
+     *       relationship.index
+     *     process/JobName_0.1.item
+     *     process/JobName_0.1.properties
+     *     code/routines/, context/, metadata/...
      */
     private List<Entry> buildEntries(String projectName, List<TalendJob> jobs,
                                        Map<String, String> extraFiles) {
         String projectDir = sanitizeProjectDir(projectName);
         List<Entry> entries = new ArrayList<>();
 
-        // Project marker
+        // Talend project metadata (also returns user xmi:id for cross-refs)
         TalendXmlWriterService.ProjectXml projectXml =
                 xmlWriter.writeTalendProjectXmlWithId(projectName);
+
+        // 1) Eclipse .project marker — REQUIRED for Talend Studio to detect
+        //    the project during "Import existing project" wizard scan
+        entries.add(new Entry(projectDir + "/.project",
+                xmlWriter.writeEclipseProjectXml(projectXml.technicalLabel)));
+
+        // 2) Talend project metadata
         entries.add(new Entry(projectDir + "/talend.project", projectXml.xml));
 
-        // Required empty directories
+        // 3) .settings/ directory — technicalStatus + log settings + Eclipse prefs
+        entries.add(new Entry(projectDir + "/.settings/", null));
+        entries.add(new Entry(projectDir + "/.settings/project.settings",
+                xmlWriter.writeProjectSettingsJson()));
+        entries.add(new Entry(projectDir + "/.settings/org.eclipse.core.resources.prefs",
+                xmlWriter.writeEclipseEncodingPrefs()));
+        entries.add(new Entry(projectDir + "/.settings/org.talend.repository.prefs",
+                xmlWriter.writeTalendRepoPrefs()));
+        entries.add(new Entry(projectDir + "/.settings/org.talend.designer.maven.prefs",
+                xmlWriter.writeMavenPrefs()));
+        entries.add(new Entry(projectDir + "/.settings/relationship.index",
+                xmlWriter.writeRelationshipIndex()));
+
+        // 4) Required empty directories
         for (String d : new String[]{
                 "process", "context", "code/routines", "code/routines/system",
                 "metadata/connections", "metadata/file", "metadata/sapconnections",
@@ -185,7 +182,7 @@ public class WorkspaceExporterService {
             entries.add(new Entry(projectDir + "/" + d + "/", null));
         }
 
-        // Job .item + .properties pairs
+        // 5) Job .item + .properties pairs
         if (jobs != null) {
             for (TalendJob job : jobs) {
                 String jobName = job.getName();
@@ -194,11 +191,12 @@ public class WorkspaceExporterService {
                         xmlWriter.writeItemXml(job)));
                 entries.add(new Entry(basePath + ".properties",
                         xmlWriter.writePropertiesXml(
-                                job, projectXml.technicalLabel, projectXml.projectXmiId)));
+                                job, projectXml.technicalLabel,
+                                projectXml.projectXmiId, projectXml.userXmiId)));
             }
         }
 
-        // Extra files (dbt artifacts, etc.)
+        // 6) Extra files (dbt artifacts, etc.)
         if (extraFiles != null) {
             for (Map.Entry<String, String> e : extraFiles.entrySet()) {
                 String relPath = e.getKey();
