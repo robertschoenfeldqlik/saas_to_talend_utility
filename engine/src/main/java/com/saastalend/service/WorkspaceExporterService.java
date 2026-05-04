@@ -70,11 +70,14 @@ public class WorkspaceExporterService {
              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
             for (Entry e : entries) {
-                if (e.content == null) {
-                    addEmptyDir(zos, e.path);
-                } else {
-                    addZipEntry(zos, e.path, e.content);
-                }
+                // CRITICAL: Skip directory entries entirely. Real Talend
+                // Studio export ZIPs (verified against nokey.zip shipped
+                // with Studio 8.0.1) contain ONLY file entries — no explicit
+                // directory markers. The import wizard's archive scanner
+                // refuses to detect projects when stray directory entries
+                // appear in the archive.
+                if (e.content == null) continue;
+                addZipEntry(zos, e.path, e.content);
             }
 
             zos.finish();
@@ -230,20 +233,14 @@ public class WorkspaceExporterService {
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
 
             for (Entry e : entries) {
-                if (e.content == null) {
-                    // Directory marker
-                    String dirPath = e.path.endsWith("/") ? e.path : e.path + "/";
-                    TarArchiveEntry dir = new TarArchiveEntry(dirPath);
-                    tar.putArchiveEntry(dir);
-                    tar.closeArchiveEntry();
-                } else {
-                    byte[] data = e.content.getBytes(StandardCharsets.UTF_8);
-                    TarArchiveEntry tEntry = new TarArchiveEntry(e.path);
-                    tEntry.setSize(data.length);
-                    tar.putArchiveEntry(tEntry);
-                    tar.write(data);
-                    tar.closeArchiveEntry();
-                }
+                // Skip directory entries — see exportWorkspace() for rationale.
+                if (e.content == null) continue;
+                byte[] data = e.content.getBytes(StandardCharsets.UTF_8);
+                TarArchiveEntry tEntry = new TarArchiveEntry(e.path);
+                tEntry.setSize(data.length);
+                tar.putArchiveEntry(tEntry);
+                tar.write(data);
+                tar.closeArchiveEntry();
             }
 
             tar.finish();
