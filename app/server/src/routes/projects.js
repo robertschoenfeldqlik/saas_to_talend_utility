@@ -253,13 +253,22 @@ router.delete('/jobs', (req, res) => {
   }
 });
 
-// POST /api/projects/export — bridge: reconstruct jobs in Java engine then export ZIP
+// POST /api/projects/export — bridge: reconstruct jobs in Java engine then export archive
+//
+// Body: { projectName, jobIds: [], format?: "tar.gz" | "zip" }
+//
+// Default format is tar.gz because that's what Talend Studio 8.0.1's
+// "Import existing project" wizard accepts. .zip is rejected at the file
+// picker step. zip is still available as an opt-in for the legacy
+// "Import items" wizard.
 router.post('/export', async (req, res) => {
   try {
-    const { projectName, jobIds } = req.body;
+    const { projectName, jobIds, format } = req.body;
     if (!projectName || !Array.isArray(jobIds) || jobIds.length === 0) {
       return res.status(400).json({ error: 'projectName and jobIds[] required' });
     }
+    const useTarGz = !format
+      || ['tar.gz', 'targz', 'tgz'].includes(String(format).toLowerCase());
 
     // 1) Load jobs + their parent projects from SQLite
     const placeholders = jobIds.map(() => '?').join(',');
@@ -368,13 +377,14 @@ router.post('/export', async (req, res) => {
       return res.status(500).json({ error: 'Java engine did not return any jobs or files' });
     }
 
-    // 3) Call Java /export with the fresh UUIDs + any dbt files, stream the ZIP back
+    // 3) Call Java /export with the fresh UUIDs + any dbt files, stream the archive back
     const dbtFileList = Object.entries(extraFiles).map(([path, content]) => ({ path, content }));
     const exportResp = await axios.post(`${ENGINE_URL}/api/engine/export`, {
       projectName,
       jobIds: generatedUuids,
       extraFiles,          // Map<String,String> form
       dbtFiles: dbtFileList, // List<{path,content}> form — whichever the ExportRequest accepts
+      format: useTarGz ? 'tar.gz' : 'zip',
     }, {
       responseType: 'arraybuffer',
       timeout: 60000,
@@ -388,8 +398,10 @@ router.post('/export', async (req, res) => {
     }
 
     const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${safeName}_workspace.zip"`);
+    const ext = useTarGz ? '.tar.gz' : '.zip';
+    const contentType = useTarGz ? 'application/gzip' : 'application/zip';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}_workspace${ext}"`);
     res.setHeader('Content-Length', exportResp.data.length);
 
     // Mark jobs as exported

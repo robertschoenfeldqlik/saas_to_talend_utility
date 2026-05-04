@@ -42,6 +42,14 @@
             <version>${dom4j.version}</version>
         </dependency>
 
+        <!-- For .tar.gz workspace exports — Talend Studio's "Import existing project"
+             wizard accepts .tar.gz, not plain .zip. -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.26.1</version>
+        </dependency>
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

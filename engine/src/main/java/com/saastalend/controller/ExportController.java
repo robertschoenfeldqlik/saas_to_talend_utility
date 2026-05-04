@@ -36,6 +36,9 @@ public class ExportController {
         private String projectName;
         private List<String> jobIds;
         private List<DbtFile> dbtFiles;
+        /** "tar.gz" (default) for Talend Studio "Import existing project",
+         *  or "zip" for the legacy items archive. */
+        private String format;
     }
 
     @Data
@@ -94,20 +97,38 @@ public class ExportController {
                 }
             }
 
-            byte[] zipBytes = exporterService.exportWorkspace(
-                    request.getProjectName(), jobs, extraFiles);
+            // Default to tar.gz — that's what Talend Studio 8.0.1's
+            // "Import existing project" wizard accepts. ZIP remains
+            // available as an opt-in for the legacy items wizard.
+            String fmt = request.getFormat();
+            boolean wantTarGz = fmt == null || fmt.isBlank()
+                    || fmt.equalsIgnoreCase("tar.gz")
+                    || fmt.equalsIgnoreCase("targz")
+                    || fmt.equalsIgnoreCase("tgz");
+
+            byte[] body;
+            String extension;
+            if (wantTarGz) {
+                body = exporterService.exportWorkspaceTarGz(
+                        request.getProjectName(), jobs, extraFiles);
+                extension = ".tar.gz";
+            } else {
+                body = exporterService.exportWorkspace(
+                        request.getProjectName(), jobs, extraFiles);
+                extension = ".zip";
+            }
 
             String filename = request.getProjectName()
-                    .replaceAll("[^a-zA-Z0-9_-]", "_") + "_workspace.zip";
+                    .replaceAll("[^a-zA-Z0-9_-]", "_") + "_workspace" + extension;
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", filename);
-            headers.setContentLength(zipBytes.length);
+            headers.setContentLength(body.length);
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(zipBytes);
+                    .body(body);
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
