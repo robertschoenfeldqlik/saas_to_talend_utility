@@ -4,6 +4,7 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const logger = require('../logger');
+const { mapAuthConfig } = require('../services/authMapper');
 
 const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8081';
 
@@ -364,7 +365,7 @@ router.post('/export', async (req, res) => {
         const genResp = await axios.post(`${ENGINE_URL}/api/engine/generate`, {
           apiName: project.name,
           baseUrl,
-          auth: mapAuthType(authConfig),
+          auth: mapAuthConfig(authConfig),
           endpoints,
           outputType: 'json',
         }, { timeout: 30000 });
@@ -422,19 +423,7 @@ function safeJson(str) {
   try { return JSON.parse(str); } catch { return null; }
 }
 
-function mapAuthType(authConfig) {
-  if (!authConfig) return { type: 'NO_AUTH' };
-  const t = (authConfig.type || 'none').toLowerCase();
-  const map = {
-    'none': 'NO_AUTH',
-    'no_auth': 'NO_AUTH',
-    'api_key': 'API_KEY',
-    'bearer_token': 'BEARER_TOKEN',
-    'basic': 'BASIC',
-    'oauth2': 'OAUTH2',
-  };
-  return { ...authConfig, type: map[t] || 'NO_AUTH' };
-}
+// (mapAuthConfig moved to ../services/authMapper.js — shared with engine-proxy)
 
 // POST /api/projects/:id/jobs
 router.post('/:id/jobs', (req, res) => {

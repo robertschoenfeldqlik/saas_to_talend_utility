@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const logger = require('../logger');
+const { mapAuthConfig } = require('../services/authMapper');
 
 const router = express.Router();
 const ENGINE_TARGET = process.env.ENGINE_URL || 'http://localhost:8081';
@@ -9,16 +10,28 @@ const ENGINE_TARGET = process.env.ENGINE_URL || 'http://localhost:8081';
  * Simple reverse proxy to the Java engine.
  * Uses axios instead of http-proxy-middleware to avoid body parsing conflicts
  * and ensure fast error responses when the engine is offline.
+ *
+ * For POST /api/engine/generate we translate the frontend's auth config shape
+ * into the engine's AuthConfig DTO shape — see services/authMapper.js.
  */
 router.all('/*', async (req, res) => {
   const path = req.originalUrl; // preserves /api/engine/...
   const url = `${ENGINE_TARGET}${path}`;
 
+  // Translate auth config on the way through for the /generate endpoint
+  let body = req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined;
+  if (body && path.includes('/api/engine/generate') && body.authConfig) {
+    body = { ...body, auth: mapAuthConfig(body.authConfig) };
+    delete body.authConfig;
+  } else if (body && path.includes('/api/engine/generate') && body.auth) {
+    body = { ...body, auth: mapAuthConfig(body.auth) };
+  }
+
   try {
     const resp = await axios({
       method: req.method,
       url,
-      data: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+      data: body,
       headers: {
         'Content-Type': 'application/json',
         'Accept': req.headers.accept || 'application/json',
