@@ -14,6 +14,7 @@ import TemplateSelector from './TemplateSelector';
 import EndpointList from './EndpointList';
 import AuthConfigPanel from '../config/AuthConfigPanel';
 import OutputConfig from '../config/OutputConfig';
+import ProbePanel from './ProbePanel';
 import { discoverApi, generateJobs, createProject, saveProjectJobs, fetchUrl, generateAiConfig } from '../../api/client';
 
 const steps = [
@@ -410,6 +411,16 @@ export default function ApiSourceWizard() {
               />
             </div>
           </div>
+
+          {/* Optional probe step: hit each selected endpoint once with the
+              configured auth to capture a baseline fixture + verify the API
+              answers. Skippable — generation works without probing. */}
+          <ProbePanel
+            endpoints={endpoints}
+            selectedEndpoints={selectedEndpoints}
+            authConfig={authConfig}
+            baseUrl={apiUrl}
+          />
 
           <div className="flex items-center justify-between">
             <button onClick={() => setStep(0)} className="btn-secondary flex items-center gap-2">

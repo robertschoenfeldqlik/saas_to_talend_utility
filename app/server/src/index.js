@@ -7,6 +7,7 @@ const engineProxy = require('./routes/engine-proxy');
 const projectsRouter = require('./routes/projects');
 const aiRouter = require('./routes/ai');
 const dbtRouter = require('./routes/dbt');
+const probeRouter = require('./routes/probe');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,6 +44,7 @@ app.use('/api/engine', engineProxy);
 app.use('/api/projects', projectsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/dbt', dbtRouter);
+app.use('/api/probe', probeRouter);
 
 // Serve Vite build in production
 if (process.env.NODE_ENV === 'production') {

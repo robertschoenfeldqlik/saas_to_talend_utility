@@ -1,91 +1,12 @@
 const express = require('express');
-const initSqlJs = require('sql.js');
 const axios = require('axios');
-const path = require('path');
-const fs = require('fs');
 const logger = require('../logger');
 const { mapAuthConfig } = require('../services/authMapper');
+const { getDb, queryAll, queryOne, runSql } = require('../services/db');
 
 const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8081';
 
 const router = express.Router();
-
-// Initialize SQLite database (sql.js — pure JS, no native deps)
-const DB_PATH = path.join(__dirname, '..', '..', 'data', 'projects.db');
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-let db;
-
-async function getDb() {
-  if (db) return db;
-  const SQL = await initSqlJs();
-  if (fs.existsSync(DB_PATH)) {
-    const buffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(buffer);
-  } else {
-    db = new SQL.Database();
-  }
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS projects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      apiName TEXT,
-      baseUrl TEXT,
-      authConfig TEXT DEFAULT '{}',
-      createdAt TEXT DEFAULT (datetime('now')),
-      updatedAt TEXT DEFAULT (datetime('now'))
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS jobs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      projectId INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      endpoint TEXT,
-      config TEXT DEFAULT '{}',
-      status TEXT DEFAULT 'draft',
-      createdAt TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
-    )
-  `);
-
-  saveDb();
-  return db;
-}
-
-function saveDb() {
-  if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
-}
-
-function queryAll(sql, params = []) {
-  const stmt = db.prepare(sql);
-  if (params.length) stmt.bind(params);
-  const rows = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return rows;
-}
-
-function queryOne(sql, params = []) {
-  const rows = queryAll(sql, params);
-  return rows[0] || null;
-}
-
-function runSql(sql, params = []) {
-  db.run(sql, params);
-  // Capture last_insert_rowid BEFORE saving to disk (saveDb can affect state)
-  const result = db.exec("SELECT last_insert_rowid() AS id");
-  const lastId = result?.[0]?.values?.[0]?.[0];
-  saveDb();
-  return { lastId };
-}
 
 // Ensure DB is ready before handling requests
 router.use(async (req, res, next) => {

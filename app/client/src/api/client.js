@@ -70,6 +70,16 @@ export const deleteJob = (jobId) =>
 export const deleteJobs = (ids) =>
   api.delete('/projects/jobs', { data: { ids } }).then((r) => r.data);
 
+// ── Probe (real API calls + fixture diff) ──
+export const probeEndpoint = ({ projectId, endpoint, authConfig, baseUrl }) =>
+  api.post('/probe', { projectId, endpoint, authConfig, baseUrl }, { timeout: 60000 }).then((r) => r.data);
+
+export const listFixtures = (projectId) =>
+  api.get('/probe/fixtures', { params: projectId ? { projectId } : {} }).then((r) => r.data);
+
+export const compareFixtures = ({ fixtureAId, fixtureBId, recordsPath }) =>
+  api.post('/probe/compare', { fixtureAId, fixtureBId, recordsPath }).then((r) => r.data);
+
 // ── AI ──
 export const fetchUrl = (url) =>
   api.post('/ai/fetch-url', { url }).then((r) => r.data);
