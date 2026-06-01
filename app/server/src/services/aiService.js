@@ -271,11 +271,12 @@ async function callOpenAI(systemPrompt, userMessage, config) {
 async function callOllama(systemPrompt, userMessage, config) {
   // Prefer phi4:14b > qwen2.5:7b for structured extraction
   const model = config.model || 'phi4:14b';
-  let baseUrl = config.base_url || 'http://localhost:11434';
-  // Inside Docker, localhost points to the container — use host.docker.internal instead
-  if (process.env.NODE_ENV === 'production' && baseUrl.includes('localhost')) {
-    baseUrl = baseUrl.replace('localhost', 'host.docker.internal');
-  }
+  // Shared helper auto-rewrites localhost → host.docker.internal whenever we
+  // detect we're inside Docker (presence of /.dockerenv or docker cgroup).
+  // Replaces the older NODE_ENV=production heuristic, which broke in dev
+  // mode running in the container.
+  const { resolveOllamaUrl } = require('./ollamaHost');
+  const baseUrl = resolveOllamaUrl(config.base_url || config.baseUrl);
   const response = await fetch(`${baseUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

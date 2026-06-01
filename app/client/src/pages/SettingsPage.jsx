@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import {
   Activity, Server, Brain, Palette, Database, Cloud, Key,
-  RefreshCw, CheckCircle, XCircle, Loader2, Sun, Moon, Zap,
+  RefreshCw, CheckCircle, XCircle, Loader2, Sun, Moon, Zap, AlertTriangle, Info,
 } from 'lucide-react';
-import { getEngineHealth, getAiSettings, updateAiSettings } from '../api/client';
+import { getEngineHealth, getAiSettings, updateAiSettings, listOllamaModels, diagnoseOllama } from '../api/client';
 import { useTheme } from '../context/ThemeContext';
 import axios from 'axios';
 
+// Ollama's model list is fetched LIVE from the user's installed instance
+// (see fetchOllamaModels effect) — the static list below is only used for
+// the cloud providers whose model menus are well-known and don't drift.
 const PROVIDER_CONFIG = {
   ollama: {
     name: 'Ollama (Local)',
     icon: '🦙',
     requiresKey: false,
-    models: ['llama3.1:8b', 'llama3.1:70b', 'phi4:14b', 'qwen2.5:7b', 'codellama:13b', 'mistral:7b'],
+    models: [], // populated dynamically from /api/ai/ollama/models
     description: 'Free, local LLM. No API key needed. Must be running on your machine.',
     defaultBaseUrl: 'http://localhost:11434',
   },
@@ -52,6 +55,12 @@ export default function SettingsPage() {
   const [aiTesting, setAiTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
+  // Live Ollama state — fetched from the user's actual instance, not hardcoded
+  const [ollamaModels, setOllamaModels] = useState([]);    // [{name, parameterSize, ...}]
+  const [ollamaLoading, setOllamaLoading] = useState(false);
+  const [ollamaError, setOllamaError] = useState(null);    // { error, hint, resolvedBaseUrl }
+  const [ollamaDiagnose, setOllamaDiagnose] = useState(null); // { inContainer, resolvedBaseUrl }
+
   // Pattern matches the server's GET /settings redaction format.
   const isRedactedKey = (s) => {
     if (!s) return false;
@@ -63,6 +72,44 @@ export default function SettingsPage() {
     checkEngine();
     loadAiSettings();
   }, []);
+
+  // Whenever the user switches TO Ollama or changes the base URL, refetch
+  // the live model list. Debounced 400ms so typing in the URL field doesn't
+  // hammer the server.
+  useEffect(() => {
+    if (aiProvider !== 'ollama') {
+      setOllamaModels([]);
+      setOllamaError(null);
+      setOllamaDiagnose(null);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setOllamaLoading(true);
+      setOllamaError(null);
+      try {
+        const [diag, models] = await Promise.all([
+          diagnoseOllama(aiBaseUrl || undefined).catch(() => null),
+          listOllamaModels(aiBaseUrl || undefined),
+        ]);
+        if (diag) setOllamaDiagnose(diag);
+        if (models.ok) {
+          setOllamaModels(models.models || []);
+        } else {
+          setOllamaModels([]);
+          setOllamaError({
+            error: models.error,
+            hint: models.hint,
+            resolvedBaseUrl: models.resolvedBaseUrl,
+          });
+        }
+      } catch (err) {
+        setOllamaError({ error: err.message });
+      } finally {
+        setOllamaLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [aiProvider, aiBaseUrl]);
 
   const checkEngine = async () => {
     setEngineStatus('checking');
@@ -253,17 +300,61 @@ export default function SettingsPage() {
 
           {/* Model selector */}
           <div>
-            <label className="input-label">Model</label>
+            <label className="input-label flex items-center justify-between">
+              <span>Model</span>
+              {aiProvider === 'ollama' && (
+                <span className="text-[10px] font-normal flex items-center gap-1"
+                      style={{ color: 'rgb(var(--color-text-muted))' }}>
+                  {ollamaLoading
+                    ? <><Loader2 className="w-3 h-3 animate-spin" /> loading…</>
+                    : ollamaError
+                      ? <span className="text-amber-600">Ollama unreachable</span>
+                      : <>{ollamaModels.length} installed</>}
+                </span>
+              )}
+            </label>
             <select
               value={aiModel}
               onChange={(e) => setAiModel(e.target.value)}
               className="input"
+              disabled={aiProvider === 'ollama' && ollamaLoading}
             >
-              <option value="">Default model</option>
-              {currentProvider.models.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
+              <option value="">{aiProvider === 'ollama' && ollamaModels.length === 0
+                ? (ollamaError ? '(Ollama unreachable)' : '(no models installed)')
+                : 'Default model'}</option>
+              {aiProvider === 'ollama'
+                ? ollamaModels.map((m) => (
+                    <option key={m.name} value={m.name}>
+                      {m.name}{m.parameterSize ? ` — ${m.parameterSize}` : ''}{m.quantization ? ` ${m.quantization}` : ''}
+                    </option>
+                  ))
+                : currentProvider.models.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))
+              }
             </select>
+            {aiProvider === 'ollama' && ollamaError && (
+              <div className="mt-2 p-2 rounded-lg text-xs flex items-start gap-2"
+                   style={{ background: 'rgb(254 243 199)', color: 'rgb(120 53 15)' }}>
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <div>
+                  <div><strong>Couldn't reach Ollama at {ollamaError.resolvedBaseUrl}</strong></div>
+                  {ollamaError.hint && <div className="mt-1">{ollamaError.hint}</div>}
+                </div>
+              </div>
+            )}
+            {aiProvider === 'ollama' && ollamaDiagnose?.inContainer && !ollamaError && (
+              <div className="mt-2 p-2 rounded-lg text-xs flex items-start gap-2"
+                   style={{ background: 'rgb(219 234 254)', color: 'rgb(30 58 138)' }}>
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  This server is running inside Docker. <code>localhost</code> /{' '}
+                  <code>127.0.0.1</code> are auto-rewritten to{' '}
+                  <code>host.docker.internal</code> so your host's Ollama is
+                  reachable — currently <code>{ollamaDiagnose.resolvedBaseUrl}</code>.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Base URL (primarily for Ollama, but also for custom OpenAI-compatible endpoints) */}

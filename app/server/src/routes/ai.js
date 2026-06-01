@@ -3,6 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../logger');
+const { resolveOllamaUrl, defaultOllamaUrl, inContainer } = require('../services/ollamaHost');
 
 const router = express.Router();
 
@@ -409,10 +410,10 @@ async function callOpenAI(systemPrompt, userMessage, config) {
  *  6. Truncate user content to ~16k chars so prompt_eval_count stays under 5k on small models.
  */
 async function callOllama(systemPrompt, userMessage, config) {
-  let baseUrl = config.baseUrl || 'http://localhost:11434';
-  if (process.env.DOCKER_HOST || process.env.RUNNING_IN_DOCKER) {
-    baseUrl = baseUrl.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
-  }
+  // resolveOllamaUrl auto-rewrites localhost → host.docker.internal when
+  // we're running inside Docker, so the user can keep typing the natural
+  // http://localhost:11434 and it Just Works.
+  const baseUrl = resolveOllamaUrl(config.baseUrl);
   const model = config.model || 'llama3.1';
   const isQwen3 = /qwen3/i.test(model);
 
@@ -668,6 +669,90 @@ router.post('/generate-config', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/ai/ollama/models?baseUrl=...
+ *
+ * Returns the LIVE list of models actually installed on the user's Ollama
+ * instance. The SettingsPage uses this to populate the model dropdown, so
+ * we don't show a hardcoded list of models the user may or may not have
+ * pulled.
+ *
+ * Querystring:
+ *   baseUrl   optional override; if absent, uses the saved provider URL
+ *             (or the Docker-aware default — http://host.docker.internal:11434
+ *             inside the container, http://localhost:11434 outside).
+ *
+ * Response shape:
+ *   {
+ *     ok: true,
+ *     resolvedBaseUrl: "http://host.docker.internal:11434",
+ *     inContainer: true,
+ *     models: [
+ *       { name, size, digest, modifiedAt, parameterSize, quantization }, ...
+ *     ]
+ *   }
+ *
+ * On failure (Ollama unreachable, wrong URL, etc.):
+ *   { ok: false, resolvedBaseUrl, inContainer, error, hint }
+ *   HTTP 200 — we want the UI to render the diagnostic, not throw.
+ */
+router.get('/ollama/models', async (req, res) => {
+  const userUrl = req.query.baseUrl || aiSettings.baseUrl;
+  const resolvedBaseUrl = resolveOllamaUrl(userUrl);
+  try {
+    const resp = await axios.get(`${resolvedBaseUrl}/api/tags`, { timeout: 5000 });
+    const models = (resp.data.models || []).map((m) => ({
+      name: m.name,
+      size: m.size,
+      digest: m.digest,
+      modifiedAt: m.modified_at,
+      parameterSize: m.details?.parameter_size,
+      quantization: m.details?.quantization_level,
+      family: m.details?.family,
+    }));
+    res.json({
+      ok: true,
+      resolvedBaseUrl,
+      inContainer: inContainer(),
+      models,
+    });
+  } catch (err) {
+    let hint;
+    if (err.code === 'ECONNREFUSED') {
+      hint = inContainer()
+        ? `Tried ${resolvedBaseUrl}. From inside Docker, your host Ollama is reachable as host.docker.internal:11434 — make sure 'ollama serve' is running on the host.`
+        : `Tried ${resolvedBaseUrl}. Is Ollama running? Start it with: ollama serve`;
+    } else if (err.code === 'ENOTFOUND') {
+      hint = `Host '${new URL(resolvedBaseUrl).hostname}' could not be resolved. On Linux Docker, you may need to start with --add-host=host.docker.internal:host-gateway, or set OLLAMA_HOST_OVERRIDE to your bridge gateway IP.`;
+    }
+    res.json({
+      ok: false,
+      resolvedBaseUrl,
+      inContainer: inContainer(),
+      error: err.message,
+      hint,
+    });
+  }
+});
+
+/**
+ * GET /api/ai/ollama/diagnose
+ *
+ * Diagnostic endpoint surface for the UI — returns the resolved URL it
+ * WOULD use plus whether we're in a container. Lets the UI render an
+ * informative hint without making a real call.
+ */
+router.get('/ollama/diagnose', (req, res) => {
+  res.json({
+    inContainer: inContainer(),
+    defaultBaseUrl: defaultOllamaUrl(),
+    resolvedBaseUrl: resolveOllamaUrl(req.query.baseUrl),
+    note: inContainer()
+      ? 'Running inside Docker. localhost / 127.0.0.1 are auto-rewritten to host.docker.internal so your host Ollama is reachable.'
+      : 'Running outside Docker. localhost:11434 works directly.',
+  });
+});
+
 // POST /api/ai/test-connection — Test LLM connectivity
 // Uses a simple ping that doesn't require JSON mode (compatible with all providers)
 router.post('/test-connection', async (req, res) => {
@@ -718,7 +803,10 @@ router.post('/test-connection', async (req, res) => {
       });
       result = { model: resp.data.model, tokens: (resp.data.usage?.input_tokens || 0) + (resp.data.usage?.output_tokens || 0) };
     } else if (providerName === 'ollama') {
-      const ollamaUrl = config.baseUrl || 'http://localhost:11434';
+      // resolveOllamaUrl rewrites localhost → host.docker.internal when this
+      // server runs inside Docker, so the user's local Ollama (on the host)
+      // is actually reachable.
+      const ollamaUrl = resolveOllamaUrl(config.baseUrl);
       // Ollama /api/tags is the lightest check — confirms the service is up
       const resp = await axios.get(`${ollamaUrl}/api/tags`, { timeout: 5000 });
       const modelsAvailable = (resp.data.models || []).map(m => m.name);
@@ -726,6 +814,8 @@ router.post('/test-connection', async (req, res) => {
         model: config.model || modelsAvailable[0] || '(none installed)',
         tokens: 0,
         modelsAvailable,
+        resolvedBaseUrl: ollamaUrl,
+        inContainer: inContainer(),
       };
     }
 

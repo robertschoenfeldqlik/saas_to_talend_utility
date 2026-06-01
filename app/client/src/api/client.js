@@ -96,6 +96,14 @@ export const updateAiSettings = (settings) =>
 export const testAiConnection = (config) =>
   api.post('/ai/test-connection', config).then((r) => r.data);
 
+/** Fetch the live list of models actually installed on the user's Ollama. */
+export const listOllamaModels = (baseUrl) =>
+  api.get('/ai/ollama/models', { params: baseUrl ? { baseUrl } : {} }).then((r) => r.data);
+
+/** Quick diagnostic: tells the UI what base URL we'd actually use + whether we're in Docker. */
+export const diagnoseOllama = (baseUrl) =>
+  api.get('/ai/ollama/diagnose', { params: baseUrl ? { baseUrl } : {} }).then((r) => r.data);
+
 // ── Database ──
 export const discoverDatabase = (cfg) =>
   api.post('/engine/db/discover', cfg, { timeout: 60000 }).then((r) => r.data);
