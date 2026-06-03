@@ -19,38 +19,42 @@ export default function XmlPreview({ projectName, jobName }) {
         type="id_String"
         value=""/>
   </context>
-  <node componentName="tRESTClient"
-        componentVersion="0.102"
+  <node componentName="HTTPClient"
+        componentVersion="5"
         offsetLabelX="0" offsetLabelY="0"
         posX="128" posY="160">
-    <elementParameter field="TEXT" name="URL"
-        value="&quot;context.API_BASE_URL + &quot;/endpoint&quot;&quot;"/>
-    <elementParameter field="CLOSED_LIST" name="HTTP_METHOD"
+    <elementParameter field="TECHNICAL" name="TACOKIT_COMPONENT_ID"
+        value="aHR0cC1zdHVkaW8jSFRUUCNDbGllbnQ"/>
+    <elementParameter field="TEXT" name="configuration.dataset.datastore.base"
+        value="context.API_BASE_URL"/>
+    <elementParameter field="CLOSED_LIST" name="configuration.dataset.datastore.authentication.type"
+        value="Bearer"/>
+    <elementParameter field="TACOKIT_VALUE_SELECTION" name="configuration.dataset.methodType"
         value="GET"/>
-    <elementParameter field="CHECK" name="NEED_AUTH"
-        value="true"/>
+    <elementParameter field="TEXT" name="configuration.dataset.resource"
+        value="&quot;/endpoint&quot;"/>
   </node>
   <node componentName="tExtractJSONFields"
-        componentVersion="0.101"
+        componentVersion="0.102"
         offsetLabelX="0" offsetLabelY="0"
         posX="384" posY="160">
-    <elementParameter field="TEXT" name="JSON_PATH"
+    <elementParameter field="TEXT" name="JSON_LOOP_QUERY"
         value="&quot;$.data[*]&quot;"/>
   </node>
   <node componentName="tFileOutputJSON"
-        componentVersion="0.101"
+        componentVersion="0.102"
         offsetLabelX="0" offsetLabelY="0"
         posX="640" posY="160">
     <elementParameter field="TEXT" name="FILE_PATH"
-        value="&quot;/output/${jobName}.json&quot;"/>
+        value="&quot;context.OUTPUT_DIR + &quot;/${jobName}.json&quot;&quot;"/>
     <elementParameter field="CLOSED_LIST" name="ENCODING"
         value="UTF-8"/>
   </node>
-  <connection connectorName="FLOW" label="Main"
+  <connection connectorName="FLOW" label="row1"
       lineStyle="0" metaname="${jobName}_metadata"
       offsetLabelX="0" offsetLabelY="0"
-      source="tRESTClient_1" target="tExtractJSONFields_1"/>
-  <connection connectorName="FLOW" label="Main"
+      source="tHTTPClient_1" target="tExtractJSONFields_1"/>
+  <connection connectorName="FLOW" label="row3"
       lineStyle="0" metaname="${jobName}_metadata"
       offsetLabelX="0" offsetLabelY="0"
       source="tExtractJSONFields_1" target="tFileOutputJSON_1"/>

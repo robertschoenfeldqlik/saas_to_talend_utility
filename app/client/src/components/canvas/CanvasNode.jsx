@@ -3,19 +3,24 @@ import { Handle, Position } from '@xyflow/react';
 import { Globe, Braces, Shuffle, FileOutput, Terminal, Database } from 'lucide-react';
 
 const typeIcons = {
-  tRESTClient: Globe,
+  HTTPClient: Globe,
+  tRESTClient: Globe,   // legacy alias (pre-TaCoKit jobs)
   tExtractJSONFields: Braces,
   tMap: Shuffle,
   tFileOutputJSON: FileOutput,
   tLogRow: Terminal,
   tMysqlOutput: Database,
+  tDBOutput: Database,
 };
 
 function getSummary(data) {
   const params = data.params || {};
   switch (data.type) {
+    case 'HTTPClient':
     case 'tRESTClient':
       return params.URL?.value || 'Configure URL';
+    case 'tDBOutput':
+      return params.TABLE?.value || 'Configure table';
     case 'tExtractJSONFields':
       return params.JSON_PATH?.value || 'Configure JSONPath';
     case 'tMap':

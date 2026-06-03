@@ -9,7 +9,7 @@ import {
  * THE EXACT LLM SYSTEM PROMPT used by /api/ai/generate-config
  * (mirrors app/server/src/routes/ai.js SYSTEM_PROMPT — kept in sync manually)
  */
-const LLM_SYSTEM_PROMPT = `You are a REST API integration expert. Your only job: read API documentation (OpenAPI/Swagger spec OR freeform HTML docs) and emit ONE JSON object describing every GET list endpoint so it can drive a Talend tRESTClient component.
+const LLM_SYSTEM_PROMPT = `You are a REST API integration expert. Your only job: read API documentation (OpenAPI/Swagger spec OR freeform HTML docs) and emit ONE JSON object describing every GET list endpoint so it can drive a Talend HTTPClient component.
 
 ## OUTPUT CONTRACT — return exactly this shape, nothing else
 
@@ -446,7 +446,7 @@ export default function HelpPage() {
 
         <Step n={3} title="Generate">
           <p>Click <strong>Generate Jobs</strong>. Each selected endpoint becomes one Talend job:</p>
-          <CodeBlock>tRESTClient → tExtractJSONFields → tLogRow / tFileOutputJSON / tDBOutput</CodeBlock>
+          <CodeBlock>HTTPClient (TaCoKit) → tExtractJSONFields → tLogRow / tFileOutputJSON / tDBOutput</CodeBlock>
           <p>All credentials become Talend <code>context.*</code> variables — never hardcoded in the XML.</p>
         </Step>
       </Section>
@@ -554,7 +554,7 @@ export default function HelpPage() {
       {/* ── Context Variables ────────────────────────────────── */}
       <Section icon={Shield} title="Context Variables (no hardcoded secrets)" accent="amber" defaultOpen={false}>
         <p className="text-sm" style={{ color: 'rgb(var(--color-text-secondary))' }}>
-          Every generated .item file declares a standard set of context parameters that the tRESTClient / tDBInput / tDBOutput components reference via <code>context.VAR_NAME</code>. Fill them in Talend Studio's context editor once per environment — the jobs carry no secrets.
+          Every generated .item file declares a standard set of context parameters that the HTTPClient / tDBInput / tDBOutput components reference via <code>context.VAR_NAME</code>. Fill them in Talend Studio's context editor once per environment — the jobs carry no secrets.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[

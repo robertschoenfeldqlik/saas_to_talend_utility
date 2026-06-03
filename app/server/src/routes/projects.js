@@ -144,6 +144,29 @@ router.get('/:id/jobs', (req, res) => {
   }
 });
 
+// GET /api/projects/jobs/:jobId — single job + its project context.
+// The visual canvas uses this to render the real pipeline (HTTPClient →
+// tExtractJSONFields → output) instead of placeholder demo data.
+router.get('/jobs/:jobId', (req, res) => {
+  try {
+    const job = queryOne('SELECT * FROM jobs WHERE id = ?', [req.params.jobId]);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    const project = queryOne('SELECT id, name, apiName, baseUrl, authConfig FROM projects WHERE id = ?', [job.projectId]);
+    res.json({
+      ...job,
+      config: safeJson(job.config) || {},
+      project: project
+        ? { ...project, authConfig: safeJson(project.authConfig) || { type: 'none' } }
+        : null,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Failed to fetch job');
+    res.status(500).json({ error: 'Failed to fetch job' });
+  }
+});
+
 // DELETE /api/projects/jobs/:jobId — delete single job by ID
 router.delete('/jobs/:jobId', (req, res) => {
   try {

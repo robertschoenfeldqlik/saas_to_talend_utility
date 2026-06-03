@@ -3,67 +3,91 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download } from 'lucide-react';
 import JobCanvas from '../components/canvas/JobCanvas';
 import NodeConfigPanel from '../components/canvas/NodeConfigPanel';
+import { getJob } from '../api/client';
 
-// Demo job data for when no real data is available
-const demoJob = {
-  id: 'demo',
-  name: 'REST_API_Extract',
-  endpoint: '/api/v1/users',
-  status: 'generated',
-  config: {
-    nodes: [
-      {
-        id: 'rest-1',
-        type: 'tRESTClient',
-        label: 'tRESTClient',
-        color: '#3B82F6',
-        params: {
-          URL: { type: 'TEXT', value: 'https://api.example.com/v1/users' },
-          HTTP_METHOD: { type: 'CLOSED_LIST', value: 'GET', options: ['GET', 'POST', 'PUT', 'DELETE'] },
-          CONTENT_TYPE: { type: 'CLOSED_LIST', value: 'application/json', options: ['application/json', 'application/xml', 'text/plain'] },
-          NEED_AUTH: { type: 'CHECK', value: true },
-          AUTH_TYPE: { type: 'CLOSED_LIST', value: 'Bearer Token', options: ['None', 'Basic', 'Bearer Token', 'API Key'] },
-        },
-      },
-      {
-        id: 'extract-1',
-        type: 'tExtractJSONFields',
-        label: 'tExtractJSONFields',
-        color: '#22C55E',
-        params: {
-          JSON_PATH: { type: 'TEXT', value: '$.data[*]' },
-          FIELDS: { type: 'TEXT', value: 'id, name, email, created_at' },
-        },
-      },
-      {
-        id: 'output-json',
-        type: 'tFileOutputJSON',
-        label: 'tFileOutputJSON',
-        color: '#8B5CF6',
-        params: {
-          FILE_PATH: { type: 'TEXT', value: '/output/users.json' },
-          ENCODING: { type: 'CLOSED_LIST', value: 'UTF-8', options: ['UTF-8', 'ISO-8859-1', 'US-ASCII'] },
-          APPEND: { type: 'CHECK', value: false },
-        },
-      },
-      {
-        id: 'log-1',
-        type: 'tLogRow',
-        label: 'tLogRow',
-        color: '#F59E0B',
-        params: {
-          TABLE_FORMAT: { type: 'CHECK', value: true },
-          PRINT_CONTENT_WITH: { type: 'CLOSED_LIST', value: '"|"', options: ['"|"', '","', '";"', '"\\t"'] },
-        },
-      },
-    ],
-    edges: [
-      { source: 'rest-1', target: 'extract-1', label: 'Main' },
-      { source: 'extract-1', target: 'output-json', label: 'Main' },
-      { source: 'extract-1', target: 'log-1', label: 'Copy' },
-    ],
-  },
+// Maps the frontend auth-config shape onto the AUTH TYPE label shown on the
+// HTTPClient node, matching the Talend Authentication.AuthorizationType enum.
+const AUTH_LABEL = {
+  none: 'No Auth', no_auth: 'No Auth',
+  api_key: 'API Key', apikey: 'API Key',
+  bearer: 'Bearer Token', bearer_token: 'Bearer Token',
+  basic: 'Basic', oauth2: 'OAuth 2.0',
 };
+
+/**
+ * Build the visual node/edge graph from a real job's stored config. This
+ * mirrors EXACTLY what the Java engine emits at export time:
+ *
+ *   HTTPClient (TaCoKit) --row1--> tExtractJSONFields --row2--> tLogRow
+ *                                                     \--row3--> tFileOutputJSON (or tDBOutput)
+ *
+ * The job config carries { path, paginationStyle, recordsPath, outputType, output },
+ * and the project carries { baseUrl, authConfig }.
+ */
+function buildGraphFromJob(job) {
+  const cfg = job.config || {};
+  const project = job.project || {};
+  const auth = project.authConfig || { type: 'none' };
+  const baseUrl = project.baseUrl || project.apiName || 'context.API_BASE_URL';
+  const path = cfg.path || job.endpoint || '/';
+  const fullUrl = `${String(baseUrl).replace(/\/+$/, '')}${path.startsWith('/') ? '' : '/'}${path}`;
+  const recordsPath = cfg.recordsPath || '$[*]';
+  const outputType = (cfg.outputType || job.outputType || 'json').toLowerCase();
+  const isDb = outputType === 'database' || outputType === 'db';
+
+  const httpClient = {
+    id: 'http-1',
+    type: 'HTTPClient',
+    label: 'HTTPClient',
+    color: '#009845',
+    params: {
+      URL: { type: 'TEXT', value: fullUrl },
+      HTTP_METHOD: { type: 'CLOSED_LIST', value: (cfg.method || 'GET').toUpperCase(), options: ['GET', 'POST', 'PUT', 'DELETE'] },
+      CONTENT_TYPE: { type: 'CLOSED_LIST', value: 'application/json', options: ['application/json', 'application/xml', 'text/plain'] },
+      NEED_AUTH: { type: 'CHECK', value: (auth.type || 'none') !== 'none' },
+      AUTH_TYPE: { type: 'CLOSED_LIST', value: AUTH_LABEL[(auth.type || 'none').toLowerCase()] || 'No Auth', options: ['No Auth', 'Basic', 'Bearer Token', 'API Key', 'OAuth 2.0'] },
+      PAGINATION: { type: 'TEXT', value: cfg.paginationStyle || 'none' },
+    },
+  };
+
+  const extract = {
+    id: 'extract-1',
+    type: 'tExtractJSONFields',
+    label: 'tExtractJSONFields',
+    color: '#22C55E',
+    params: { JSON_PATH: { type: 'TEXT', value: recordsPath } },
+  };
+
+  const output = isDb
+    ? {
+        id: 'output-1', type: 'tDBOutput', label: 'tDBOutput', color: '#8B5CF6',
+        params: { TABLE: { type: 'TEXT', value: cfg.output?.table || job.name } },
+      }
+    : {
+        id: 'output-1', type: 'tFileOutputJSON', label: 'tFileOutputJSON', color: '#8B5CF6',
+        params: { FILE_PATH: { type: 'TEXT', value: `context.OUTPUT_DIR + "/${job.name}.json"` } },
+      };
+
+  const logRow = {
+    id: 'log-1', type: 'tLogRow', label: 'tLogRow', color: '#F59E0B',
+    params: { TABLE_FORMAT: { type: 'CHECK', value: true } },
+  };
+
+  return {
+    id: job.id,
+    name: job.name,
+    endpoint: path,
+    status: job.status,
+    config: {
+      nodes: [httpClient, extract, output, logRow],
+      edges: [
+        { source: 'http-1', target: 'extract-1', label: 'row1' },
+        { source: 'extract-1', target: 'output-1', label: 'row3' },
+        { source: 'extract-1', target: 'log-1', label: 'row2' },
+      ],
+    },
+  };
+}
 
 export default function JobCanvasPage() {
   const { id } = useParams();
@@ -71,19 +95,22 @@ export default function JobCanvasPage() {
   const [job, setJob] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    // Try to load from API, fall back to demo
     loadJob();
   }, [id]);
 
   const loadJob = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
-      // For now, use demo data — real loading would fetch from API
-      setJob(demoJob);
+      const real = await getJob(id);
+      setJob(buildGraphFromJob(real));
     } catch (err) {
       console.error('Failed to load job:', err);
-      setJob(demoJob);
+      setLoadError(err.response?.data?.error || err.message || 'Failed to load job');
+      setJob(null);
     } finally {
       setLoading(false);
     }
@@ -112,7 +139,18 @@ export default function JobCanvasPage() {
     );
   }
 
-  if (!job) return null;
+  if (!job) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
+        <p style={{ color: 'rgb(var(--color-text-secondary))' }}>
+          {loadError || 'Job not found.'}
+        </p>
+        <button onClick={() => navigate('/jobs')} className="btn-secondary flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back to Jobs
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

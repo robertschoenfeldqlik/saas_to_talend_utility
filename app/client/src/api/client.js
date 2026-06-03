@@ -61,6 +61,10 @@ export const deleteSaasProject = deleteProject;
 export const getProjectJobs = (id) =>
   api.get(`/projects/${id}/jobs`).then((r) => r.data);
 
+// Single job + project context (auth, baseUrl) — used by the visual canvas.
+export const getJob = (jobId) =>
+  api.get(`/projects/jobs/${jobId}`).then((r) => r.data);
+
 export const saveProjectJobs = (id, jobs) =>
   api.post(`/projects/${id}/jobs`, { jobs }).then((r) => r.data);
 

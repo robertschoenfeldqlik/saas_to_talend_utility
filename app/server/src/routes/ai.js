@@ -88,7 +88,7 @@ loadSettings();
 // 4k of input docs AND 4k of output JSON. One pass, no retries, clean JSON.
 // Every section below came from a real failure mode we observed.
 // ═════════════════════════════════════════════════════════════════════════════
-const SYSTEM_PROMPT = `You are a REST API integration expert. Your only job: read API documentation (OpenAPI/Swagger spec OR freeform HTML docs) and emit ONE JSON object describing every GET list endpoint so it can drive a Talend tRESTClient component.
+const SYSTEM_PROMPT = `You are a REST API integration expert. Your only job: read API documentation (OpenAPI/Swagger spec OR freeform HTML docs) and emit ONE JSON object describing every GET list endpoint so it can drive a Talend HTTPClient component.
 
 ## OUTPUT CONTRACT — return exactly this shape, nothing else
 
