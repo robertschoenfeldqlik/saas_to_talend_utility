@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Generates an HTTPClient (TaCoKit) component node — the modern Talend Studio 8.0.1
- * REST client, replacing the deprecated tRESTClient.
+ * Generates an HTTPClient (TaCoKit) component node — the Talend Studio 8.0.1
+ * HTTP client used for every generated SaaS API job.
  *
  * Schema decompiled from Talend's own JARs:
  *   org.talend.components/http-common/1.2603.1/http-common-1.2603.1.jar
@@ -34,12 +34,12 @@ import java.util.List;
  * Each strategy has its own *StrategyConfig sub-object with exact field paths
  * verified against the decompiled schema.
  */
-public final class TRESTClientGenerator {
+public final class HttpClientGenerator {
 
     /** base64("http-studio#HTTP#Client") — TaCoKit family identifier. */
     private static final String HTTPCLIENT_TACOKIT_ID = "aHR0cC1zdHVkaW8jSFRUUCNDbGllbnQ";
 
-    private TRESTClientGenerator() {
+    private HttpClientGenerator() {
     }
 
     public static TalendNode generate(DiscoveredEndpoint endpoint, AuthConfig auth,

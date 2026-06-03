@@ -4,7 +4,6 @@ import { Globe, Braces, Shuffle, FileOutput, Terminal, Database } from 'lucide-r
 
 const typeIcons = {
   HTTPClient: Globe,
-  tRESTClient: Globe,   // legacy alias (pre-TaCoKit jobs)
   tExtractJSONFields: Braces,
   tMap: Shuffle,
   tFileOutputJSON: FileOutput,
@@ -17,7 +16,6 @@ function getSummary(data) {
   const params = data.params || {};
   switch (data.type) {
     case 'HTTPClient':
-    case 'tRESTClient':
       return params.URL?.value || 'Configure URL';
     case 'tDBOutput':
       return params.TABLE?.value || 'Configure table';

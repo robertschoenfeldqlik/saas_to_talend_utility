@@ -24,11 +24,11 @@ public class TalendJobGeneratorService {
         List<TalendConnection> connections = new ArrayList<>();
 
         // Pipeline matches real Talend Studio 8.0.1 output:
-        //   HTTPClient (was tRESTClient) → tExtractJSONFields → tLogRow + tFileOutputJSON
+        //   HTTPClient → tExtractJSONFields → tLogRow + tFileOutputJSON
         // HTTPClient emits a FLOW connector named "row1" carrying a "body" id_String column.
 
         // Node 1: HTTPClient — calls the API (uses context.API_BASE_URL + path)
-        TalendNode httpClient = TRESTClientGenerator.generate(endpoint, auth, baseUrl, 100, 100);
+        TalendNode httpClient = HttpClientGenerator.generate(endpoint, auth, baseUrl, 100, 100);
         nodes.add(httpClient);
 
         // Node 2: tExtractJSONFields — extracts records from JSON response

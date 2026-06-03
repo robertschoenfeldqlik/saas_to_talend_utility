@@ -5,7 +5,7 @@ Convert SaaS APIs, databases, and dbt projects into ready-to-import Talend Studi
 ## What it does
 
 Point it at any of:
-- **An API** (OpenAPI/Swagger spec or freeform docs) — generates one `tRESTClient` job per GET endpoint
+- **An API** (OpenAPI/Swagger spec or freeform docs) — generates one `HTTPClient` (TaCoKit) job per GET endpoint
 - **A database** (PostgreSQL, MySQL, Snowflake, BigQuery, Redshift, SQL Server, Oracle, SQLite) — generates one `tXxxInput → tLogRow/tFileOutputJSON/tXxxOutput` job per table
 - **A dbt project** (ZIP, GitHub URL, or pasted SQL) — generates one `tXxxRow` job per model that executes the compiled SQL against the target warehouse
 

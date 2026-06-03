@@ -37,7 +37,7 @@ import java.util.Map;
  * sanity check ("the API works with these creds") and as a baseline
  * fixture for later regression diffing.
  *
- * Auth handling matches TRESTClientGenerator semantics for the subset
+ * Auth handling matches HttpClientGenerator semantics for the subset
  * of auth types we can resolve at probe time (no OAuth2 token exchange
  * — that requires a client-credentials grant we'd need to set up; for
  * v1 we skip OAuth2 probes).
@@ -236,7 +236,7 @@ public class ProbeService {
         }
     }
 
-    /** Inject auth into headers and/or query params, matching what TRESTClientGenerator emits. */
+    /** Inject auth into headers and/or query params, matching what HttpClientGenerator emits. */
     private void applyAuth(AuthConfig auth, Map<String, String> headers, List<String> queryParts) {
         if (auth == null || auth.getType() == null) return;
 
@@ -300,7 +300,7 @@ public class ProbeService {
         return fields;
     }
 
-    /** Map a Jackson node to the same Talend type tokens TRESTClientGenerator uses. */
+    /** Map a Jackson node to the same Talend type tokens HttpClientGenerator uses. */
     private static String jsonNodeToTalendType(JsonNode n) {
         if (n == null || n.isNull())  return "id_String";
         if (n.isTextual())            return "id_String";

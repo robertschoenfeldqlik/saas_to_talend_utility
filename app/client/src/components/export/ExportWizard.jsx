@@ -20,12 +20,14 @@ export default function ExportWizard() {
   const [exported, setExported] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setLoadError(null);
     try {
       const projectList = await getProjects();
       setProjects(projectList);
@@ -39,15 +41,12 @@ export default function ExportWizard() {
       if (projectList.length > 0) {
         setProjectName(projectList[0].name || 'TalendWorkspace');
       }
-    } catch {
-      // Demo jobs if no data
-      const demo = [
-        { id: 1, name: 'List_Users_Job', endpoint: '/api/v1/users', status: 'generated', projectName: 'Demo' },
-        { id: 2, name: 'Get_Orders_Job', endpoint: '/api/v1/orders', status: 'generated', projectName: 'Demo' },
-        { id: 3, name: 'List_Products_Job', endpoint: '/api/v1/products', status: 'generated', projectName: 'Demo' },
-      ];
-      setJobs(demo);
-      setProjectName('SaaS_API_Project');
+    } catch (err) {
+      // No demo/placeholder fallback — surface the real failure and show an
+      // empty list so the user knows there are genuinely no jobs to export.
+      console.error('Failed to load projects/jobs for export:', err);
+      setJobs([]);
+      setLoadError(err.response?.data?.error || err.message || 'Failed to load jobs');
     } finally {
       setLoading(false);
     }
@@ -166,6 +165,19 @@ export default function ExportWizard() {
             {selectedJobs.size === jobs.length ? 'Deselect All' : 'Select All'}
           </button>
         </div>
+
+        {loadError && (
+          <div className="mb-3 p-3 rounded-lg text-xs"
+               style={{ background: 'rgb(254 226 226)', color: 'rgb(127 29 29)' }}>
+            Couldn&apos;t load jobs: {loadError}
+          </div>
+        )}
+        {jobs.length === 0 && !loadError && (
+          <div className="p-4 rounded-lg text-sm text-center"
+               style={{ background: 'rgb(var(--color-surface-alt))', color: 'rgb(var(--color-text-secondary))' }}>
+            No jobs yet. Generate some from the Discover page first.
+          </div>
+        )}
 
         <div className="space-y-2">
           {jobs.map((job) => (

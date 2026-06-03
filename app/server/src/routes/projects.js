@@ -145,8 +145,8 @@ router.get('/:id/jobs', (req, res) => {
 });
 
 // GET /api/projects/jobs/:jobId — single job + its project context.
-// The visual canvas uses this to render the real pipeline (HTTPClient →
-// tExtractJSONFields → output) instead of placeholder demo data.
+// The visual canvas uses this to render the job's real pipeline:
+// HTTPClient → tExtractJSONFields → output.
 router.get('/jobs/:jobId', (req, res) => {
   try {
     const job = queryOne('SELECT * FROM jobs WHERE id = ?', [req.params.jobId]);
