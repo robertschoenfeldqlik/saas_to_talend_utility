@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  engine:
+    name: Engine (Java)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile + test
+        run: mvn -B -f engine/pom.xml test
+
+  app:
+    name: App (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Server install + test
+        working-directory: app/server
+        run: |
+          npm ci
+          npm test
+      - name: Client install + build
+        working-directory: app/client
+        run: |
+          npm ci
+          npm run build

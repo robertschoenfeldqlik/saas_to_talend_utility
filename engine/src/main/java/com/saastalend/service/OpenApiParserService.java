@@ -41,6 +41,13 @@ public class OpenApiParserService {
     public DiscoveryResult parseSpec(String specContent) {
         List<String> warnings = new ArrayList<>();
 
+        // Block SSRF / local-file disclosure: a malicious spec can carry a
+        // $ref pointing at a remote URL (e.g. cloud metadata) or a local file
+        // (file:///…), which swagger-parser would dereference during
+        // resolution. We accept only internal refs ("#/…") — multi-file specs
+        // aren't supported here anyway since we parse a single spec string.
+        assertNoExternalRefs(specContent);
+
         ParseOptions options = new ParseOptions();
         options.setResolve(true);
         options.setResolveFully(true);
@@ -103,5 +110,27 @@ public class OpenApiParserService {
                 .endpoints(endpoints)
                 .warnings(warnings)
                 .build();
+    }
+
+    private static final java.util.regex.Pattern REF_RE =
+            java.util.regex.Pattern.compile("\\$ref\\s*['\"]?\\s*:\\s*['\"]?([^'\"\\s,}\\]]+)");
+
+    /**
+     * Rejects any spec that references an external document. A $ref whose
+     * target does not begin with '#' points outside the spec (a remote URL or
+     * a local file path) and would cause swagger-parser to fetch it — an SSRF
+     * and local-file-read vector when the spec is attacker-supplied.
+     */
+    static void assertNoExternalRefs(String specContent) {
+        if (specContent == null) return;
+        java.util.regex.Matcher m = REF_RE.matcher(specContent);
+        while (m.find()) {
+            String ref = m.group(1);
+            if (ref != null && !ref.isEmpty() && !ref.startsWith("#")) {
+                throw new IllegalArgumentException(
+                        "External $ref is not allowed in the spec: \"" + ref
+                        + "\". Inline the referenced definition and retry.");
+            }
+        }
     }
 }

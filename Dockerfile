@@ -92,9 +92,13 @@ USER node
 
 ENV NODE_ENV=production \
     ENGINE_URL=http://localhost:8081 \
-    PORT=3000
+    PORT=3000 \
+    HOST=0.0.0.0
 
-EXPOSE 3000 8081
+# Only 3000 is meant to be published. The Java engine on 8081 is an internal
+# implementation detail fronted by the Express proxy — do not EXPOSE it, or
+# `docker run -P` would publish the unauthenticated engine API to the host.
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -f http://localhost:3000/api/health && \

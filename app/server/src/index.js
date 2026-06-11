@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const path = require('path');
 const logger = require('./logger');
 
@@ -34,6 +35,36 @@ app.use((req, res, next) => {
   next();
 });
 
+// ─── Optional HTTP Basic auth ────────────────────────────────────────────────
+// If APP_AUTH_PASSWORD is set, every route except the health check requires
+// HTTP Basic credentials. The browser prompts once on first page load and then
+// auto-sends the header on all same-origin requests (the SPA and its /api
+// calls), so no client changes are needed. Unset = no auth (the local default).
+const AUTH_USER = process.env.APP_AUTH_USER || 'admin';
+const AUTH_PASSWORD = process.env.APP_AUTH_PASSWORD || '';
+
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+
+if (AUTH_PASSWORD) {
+  app.use((req, res, next) => {
+    if (req.path === '/api/health') return next(); // keep the healthcheck open
+    const [scheme, encoded] = (req.headers.authorization || '').split(' ');
+    if (scheme === 'Basic' && encoded) {
+      const [user, pass] = Buffer.from(encoded, 'base64').toString('utf8').split(':');
+      if (safeEqual(user || '', AUTH_USER) && safeEqual(pass || '', AUTH_PASSWORD)) {
+        return next();
+      }
+    }
+    res.set('WWW-Authenticate', 'Basic realm="SaaS-to-Talend"');
+    return res.status(401).json({ error: 'Authentication required' });
+  });
+  logger.info('HTTP Basic auth enabled (APP_AUTH_PASSWORD is set)');
+}
+
 // Health endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -63,8 +94,10 @@ app.use((err, req, res, _next) => {
   });
 });
 
-// Bind 0.0.0.0 so the server is reachable from outside a Docker container
-const HOST = process.env.HOST || '0.0.0.0';
+// Bind to localhost by default. The Docker image sets HOST=0.0.0.0 so the
+// published port is reachable from outside the container; a bare `node` run
+// stays on 127.0.0.1 instead of silently listening on every interface.
+const HOST = process.env.HOST || '127.0.0.1';
 const server = app.listen(PORT, HOST, () => {
   logger.info({ host: HOST, port: PORT }, 'SaaS-to-Talend server started');
 });

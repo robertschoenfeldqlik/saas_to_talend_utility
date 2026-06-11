@@ -21,3 +21,6 @@ app/server/data/ai-settings.json
 
 # Claude internal
 .claude/
+
+# Large binary docs — keep on disk, don't track (use a docs share / Git LFS)
+/SaaS-to-Talend-Overview.pptx

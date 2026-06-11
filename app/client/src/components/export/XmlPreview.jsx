@@ -1,4 +1,16 @@
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function XmlPreview({ projectName, jobName }) {
+  // jobName is user-controlled and flows into dangerouslySetInnerHTML below,
+  // so HTML-escape it before it enters the markup string.
+  const safeName = escapeHtml(jobName || 'Job');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <talendfile:ProcessType
     xmi:version="2.0"
@@ -46,24 +58,24 @@ export default function XmlPreview({ projectName, jobName }) {
         offsetLabelX="0" offsetLabelY="0"
         posX="640" posY="160">
     <elementParameter field="TEXT" name="FILE_PATH"
-        value="&quot;context.OUTPUT_DIR + &quot;/${jobName}.json&quot;&quot;"/>
+        value="&quot;context.OUTPUT_DIR + &quot;/${safeName}.json&quot;&quot;"/>
     <elementParameter field="CLOSED_LIST" name="ENCODING"
         value="UTF-8"/>
   </node>
   <connection connectorName="FLOW" label="row1"
-      lineStyle="0" metaname="${jobName}_metadata"
+      lineStyle="0" metaname="${safeName}_metadata"
       offsetLabelX="0" offsetLabelY="0"
       source="tHTTPClient_1" target="tExtractJSONFields_1"/>
   <connection connectorName="FLOW" label="row3"
-      lineStyle="0" metaname="${jobName}_metadata"
+      lineStyle="0" metaname="${safeName}_metadata"
       offsetLabelX="0" offsetLabelY="0"
       source="tExtractJSONFields_1" target="tFileOutputJSON_1"/>
 </talendfile:ProcessType>`;
 
-  // Basic syntax highlighting for XML
+  // Basic syntax highlighting for XML. NOTE: do not entity-decode here — the
+  // template uses literal angle brackets, and decoding would undo the escaping
+  // applied to the user-controlled jobName (reintroducing the XSS sink).
   const highlighted = xml
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
     .split('\n')
     .map((line, i) => {
       let html = line

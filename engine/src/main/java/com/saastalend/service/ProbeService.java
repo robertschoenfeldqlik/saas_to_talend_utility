@@ -14,8 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -56,7 +58,11 @@ public class ProbeService {
 
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
-            .followRedirects(HttpClient.Redirect.NORMAL)
+            // Do NOT auto-follow redirects. A third-party API we probe could
+            // 3xx the request onto an internal or cloud-metadata address
+            // (SSRF). A redirect is surfaced to the user as its 3xx status
+            // code instead, which is also useful diagnostic information.
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
     public ProbeService(FixtureStore fixtureStore, RedactionService redactionService) {
@@ -101,9 +107,20 @@ public class ProbeService {
         String finalUrl = url.toString();
         out.url(finalUrl);
 
+        // ── Block link-local / cloud-metadata SSRF targets ────────────────
+        URI target;
+        try {
+            target = URI.create(finalUrl);
+            assertFetchable(target);
+        } catch (IllegalArgumentException blocked) {
+            return out.error(blocked.getMessage())
+                    .elapsedMs(Duration.between(start, Instant.now()).toMillis())
+                    .build();
+        }
+
         // ── Issue request ─────────────────────────────────────────────────
         HttpRequest.Builder rb = HttpRequest.newBuilder()
-                .uri(URI.create(finalUrl))
+                .uri(target)
                 .timeout(Duration.ofMillis(Math.max(1000, req.getTimeoutMs())))
                 .GET();
         headers.forEach(rb::header);
@@ -310,6 +327,38 @@ public class ProbeService {
         if (n.isArray())              return "id_String";   // serialized
         if (n.isObject())             return "id_String";   // serialized
         return "id_String";
+    }
+
+    /**
+     * Refuses to probe link-local / cloud-metadata addresses (169.254.0.0/16,
+     * fe80::/10) and the wildcard address — never a legitimate API target and
+     * the canonical SSRF objective (e.g. the EC2/GCP metadata endpoint at
+     * 169.254.169.254). Private and loopback hosts are deliberately allowed:
+     * probing an internal API is a supported use of this tool, and redirects
+     * are not auto-followed so a remote API cannot bounce us onto a blocked
+     * address.
+     */
+    private static void assertFetchable(URI uri) {
+        String scheme = uri.getScheme();
+        if (scheme == null
+                || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            throw new IllegalArgumentException(
+                    "Only http/https URLs can be probed (got: " + scheme + ")");
+        }
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new IllegalArgumentException("Probe URL has no host");
+        }
+        try {
+            for (InetAddress addr : InetAddress.getAllByName(host)) {
+                if (addr.isLinkLocalAddress() || addr.isAnyLocalAddress()) {
+                    throw new IllegalArgumentException(
+                            "Refusing to probe link-local / metadata address: " + host);
+                }
+            }
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Cannot resolve probe host: " + host);
+        }
     }
 
     private static String excerpt(String s, int max) {

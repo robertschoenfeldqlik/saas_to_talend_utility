@@ -47,6 +47,9 @@ public class DbSchemaScannerService {
         if (cfg == null) {
             throw new IllegalArgumentException("Source config is required");
         }
+        // Block JDBC connection-property injection (socketFactory,
+        // allowLoadLocalInfile, …) before any value reaches the URL builder.
+        cfg.validate();
 
         DbDialect dialect = DbDialect.fromString(cfg.getDialect());
         if (dialect == null) {

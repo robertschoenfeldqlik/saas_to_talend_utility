@@ -34,7 +34,7 @@ const PROVIDER_CONFIG = {
     icon: '🧠',
     requiresKey: true,
     liveModels: false,
-    models: ['claude-sonnet-4-6-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-6-20250514'],
+    models: ['claude-sonnet-4-6', 'claude-haiku-4-5-20251001', 'claude-opus-4-6'],
     description: 'Cloud-hosted Claude models. Requires an Anthropic API key.',
     defaultBaseUrl: '',
   },

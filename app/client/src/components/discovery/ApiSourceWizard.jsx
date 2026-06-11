@@ -251,17 +251,14 @@ export default function ApiSourceWizard() {
 
       setGeneratedJobs(result);
     } catch (err) {
-      // Demo result if engine unavailable
-      setGeneratedJobs({
-        jobs: endpoints
-          .filter((_, i) => selectedEndpoints.has(i))
-          .map((ep) => ({
-            name: `${ep.name.replace(/\s+/g, '_')}_Job`,
-            endpoint: ep.path,
-            components: 3,
-          })),
-        projectId: 'demo',
-      });
+      // Surface the real failure — never fabricate a "demo" success. (This
+      // previously synthesized fake jobs, masking engine/save errors and
+      // showing "Jobs Generated Successfully" when nothing was actually saved.)
+      const data = err.response?.data;
+      setError(
+        (data?.error || err.message || 'Job generation failed') +
+        (data?.hint ? ` — ${data.hint}` : '')
+      );
     } finally {
       setGenerating(false);
     }

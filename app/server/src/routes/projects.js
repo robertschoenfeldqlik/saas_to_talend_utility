@@ -3,6 +3,7 @@ const axios = require('axios');
 const logger = require('../logger');
 const { mapAuthConfig } = require('../services/authMapper');
 const { getDb, queryAll, queryOne, runSql } = require('../services/db');
+const { stripAuthSecrets } = require('../services/authSecrets');
 
 const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8081';
 
@@ -66,7 +67,7 @@ router.post('/', (req, res) => {
     }
     const result = runSql(
       'INSERT INTO projects (name, apiName, baseUrl, authConfig) VALUES (?, ?, ?, ?)',
-      [name, apiName || null, baseUrl || null, JSON.stringify(authConfig || {})],
+      [name, apiName || null, baseUrl || null, JSON.stringify(stripAuthSecrets(authConfig))],
     );
     const project = queryOne('SELECT * FROM projects WHERE id = ?', [result.lastId]);
     res.status(201).json(project);
@@ -105,7 +106,7 @@ router.put('/:id', (req, res) => {
         name || existing.name,
         apiName !== undefined ? apiName : existing.apiName,
         baseUrl !== undefined ? baseUrl : existing.baseUrl,
-        authConfig ? JSON.stringify(authConfig) : existing.authConfig,
+        authConfig ? JSON.stringify(stripAuthSecrets(authConfig)) : existing.authConfig,
         req.params.id,
       ],
     );
@@ -158,7 +159,7 @@ router.get('/jobs/:jobId', (req, res) => {
       ...job,
       config: safeJson(job.config) || {},
       project: project
-        ? { ...project, authConfig: safeJson(project.authConfig) || { type: 'none' } }
+        ? { ...project, authConfig: stripAuthSecrets(safeJson(project.authConfig) || { type: 'none' }) }
         : null,
     });
   } catch (err) {

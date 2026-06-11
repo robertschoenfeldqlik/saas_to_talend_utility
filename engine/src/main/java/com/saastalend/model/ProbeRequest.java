@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Request body for POST /api/engine/probe — execute one real HTTP call
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @Builder
+@Jacksonized
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProbeRequest {

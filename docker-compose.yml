@@ -27,9 +27,17 @@ services:
       NODE_ENV: production
       ENGINE_URL: http://localhost:8081
       PORT: 3000
+      # Require HTTP Basic auth on the UI + API (recommended whenever the
+      # published port is reachable beyond localhost). User defaults to "admin";
+      # override with APP_AUTH_USER.
+      # APP_AUTH_PASSWORD: change-me
       # Ollama on host machine (Docker Desktop):
       # OLLAMA_BASE_URL: http://host.docker.internal:11434
     restart: unless-stopped
+    # Give the entrypoint's graceful shutdown (GRACE_SECONDS, default 20s) and
+    # Express's own ~15s drain room to finish before Docker sends SIGKILL
+    # (which defaults to 10s after SIGTERM).
+    stop_grace_period: 30s
     healthcheck:
       test:
         - CMD

@@ -11,7 +11,7 @@ import {
   Globe,
   Package,
 } from 'lucide-react';
-import { getProjects, getProjectJobs, deleteJob, deleteJobs, deleteProject } from '../api/client';
+import { getProjects, getProjectJobs, deleteJobs, deleteProject } from '../api/client';
 
 const statusColors = {
   draft: 'bg-gray-400/10 text-gray-500',
@@ -180,19 +180,6 @@ export default function JobListPage() {
 
   // Legacy alias kept so the JSX further down doesn't have to change yet
   const handleDeleteProject = requestDeleteProject;
-
-  const handleBulkDelete = async () => {
-    const ids = Array.from(selected);
-    if (ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} selected job${ids.length > 1 ? 's' : ''}?`)) return;
-    try {
-      await deleteJobs(ids);
-      setJobs((prev) => prev.filter((j) => !selected.has(j.id)));
-      setSelected(new Set());
-    } catch (err) {
-      alert(`Failed to delete jobs: ${err.response?.data?.error || err.message}`);
-    }
-  };
 
   const selectGroup = (projectJobs) => {
     setSelected((prev) => {

@@ -8,8 +8,25 @@ const authTypes = [
   { value: 'oauth2', label: 'OAuth 2.0' },
 ];
 
+// Connector templates and the engine use a different vocabulary (no_auth,
+// bearer_token, apikey, …) than this panel's <option> values. Normalize so a
+// template-provided type still selects the right option and shows its inputs
+// (otherwise the dropdown renders blank and the token field never appears).
+const AUTH_TYPE_ALIASES = {
+  none: 'none', no_auth: 'none', noauth: 'none',
+  api_key: 'api_key', apikey: 'api_key', 'api-key': 'api_key',
+  bearer: 'bearer', bearer_token: 'bearer', bearertoken: 'bearer', token: 'bearer',
+  basic: 'basic', basic_auth: 'basic',
+  oauth2: 'oauth2', oauth: 'oauth2', oauth_2: 'oauth2', oauth2_client_credentials: 'oauth2',
+};
+
+function normalizeAuthType(t) {
+  if (!t) return 'none';
+  return AUTH_TYPE_ALIASES[String(t).toLowerCase()] || 'none';
+}
+
 export default function AuthConfigPanel({ config, onChange }) {
-  const type = config?.type || 'none';
+  const type = normalizeAuthType(config?.type);
 
   const update = (field, value) => {
     onChange({ ...config, [field]: value });

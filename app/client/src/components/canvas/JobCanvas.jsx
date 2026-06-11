@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -46,6 +46,12 @@ export default function JobCanvas({ nodes: inputNodes, edges: inputEdges, onNode
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Re-sync when the parent updates nodes/edges (e.g. after a node-config
+  // save). useNodesState/useEdgesState only seed from their argument on mount,
+  // so without this the visual graph stays stale until the component remounts.
+  useEffect(() => { setNodes(initialNodes); }, [initialNodes, setNodes]);
+  useEffect(() => { setEdges(initialEdges); }, [initialEdges, setEdges]);
 
   const onNodeClick = useCallback(
     (_event, node) => {

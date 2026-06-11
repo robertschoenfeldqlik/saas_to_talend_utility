@@ -4,8 +4,42 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../logger');
 const { resolveOllamaUrl, defaultOllamaUrl, inContainer, probeOllama, candidatesForOllama } = require('../services/ollamaHost');
+const dns = require('dns');
+const http = require('http');
+const https = require('https');
 
 const router = express.Router();
+
+// ── SSRF guard for outbound fetches (POST /fetch-url) ────────────────────────
+// Block link-local / cloud-metadata (169.254.0.0/16, fe80::/10) and the
+// unspecified address. The custom DNS lookup runs on the initial request AND on
+// every redirect hop (follow-redirects reuses the agent), so a doc site cannot
+// 3xx the request onto the metadata endpoint and have its body reflected back.
+// Private/loopback addresses are intentionally allowed — fetching a spec from
+// an internal host is a supported use of this tool.
+function isBlockedAddress(ip) {
+  if (!ip) return true;
+  const v = String(ip).toLowerCase();
+  if (v.startsWith('169.254.') || v === '0.0.0.0') return true;     // IPv4 link-local / unspecified
+  if (v.startsWith('::ffff:169.254.')) return true;                 // IPv4-mapped link-local
+  if (v === '::' || v.startsWith('fe80:')) return true;             // IPv6 unspecified / link-local
+  return false;
+}
+
+function ssrfSafeLookup(hostname, options, callback) {
+  if (typeof options === 'function') { callback = options; options = {}; }
+  dns.lookup(hostname, options, (err, address, family) => {
+    if (err) return callback(err);
+    const list = Array.isArray(address) ? address.map((a) => a.address) : [address];
+    if (list.some(isBlockedAddress)) {
+      return callback(new Error(`Blocked SSRF target: ${hostname} resolves to a link-local/metadata address`));
+    }
+    callback(null, address, family);
+  });
+}
+
+const ssrfSafeHttpAgent = new http.Agent({ lookup: ssrfSafeLookup });
+const ssrfSafeHttpsAgent = new https.Agent({ lookup: ssrfSafeLookup });
 
 // ─── AI settings ────────────────────────────────────────────────────────────
 //
@@ -390,8 +424,12 @@ async function callOpenAI(systemPrompt, userMessage, config) {
     timeout: 120000,
   });
 
+  const content = resp.data?.choices?.[0]?.message?.content;
+  if (content == null) {
+    throw new Error('OpenAI returned no choices (unexpected response shape)');
+  }
   return {
-    text: resp.data.choices[0].message.content,
+    text: content,
     tokens: resp.data.usage?.total_tokens || 0,
     model,
     provider: 'openai',
@@ -504,7 +542,7 @@ function truncateForOllama(text, maxChars = 16000) {
  * Call Anthropic Claude API
  */
 async function callAnthropic(systemPrompt, userMessage, config) {
-  const model = config.model || 'claude-sonnet-4-6-20250514';
+  const model = config.model || 'claude-sonnet-4-6';
 
   const resp = await axios.post('https://api.anthropic.com/v1/messages', {
     model,
@@ -718,6 +756,8 @@ router.post('/fetch-url', async (req, res) => {
       maxRedirects: 5,
       maxContentLength: 20 * 1024 * 1024,  // 20 MB hard cap
       maxBodyLength:    20 * 1024 * 1024,
+      httpAgent: ssrfSafeHttpAgent,        // block link-local/metadata, incl. via redirects
+      httpsAgent: ssrfSafeHttpsAgent,
       // Get raw text — Jackson/JSON.parse later, after we decide what it is.
       transformResponse: [(data) => data],
       validateStatus: () => true,  // we'll handle non-2xx ourselves below

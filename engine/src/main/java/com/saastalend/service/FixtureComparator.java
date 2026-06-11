@@ -7,6 +7,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.saastalend.model.FieldInfo;
 import com.saastalend.model.FixtureDiff;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -32,6 +33,14 @@ public class FixtureComparator {
     private final Configuration jsonPathConfig = Configuration.builder()
             .options(Option.SUPPRESS_EXCEPTIONS, Option.DEFAULT_PATH_LEAF_TO_NULL)
             .build();
+
+    /** Fixtures live under this root; reads are confined to it (see readFixture). */
+    private final Path fixtureRoot;
+
+    public FixtureComparator(
+            @Value("${saastalend.fixtures.dir:/opt/app/server/data/fixtures}") String dir) {
+        this.fixtureRoot = Path.of(dir).toAbsolutePath().normalize();
+    }
 
     public FixtureDiff compare(String fixtureAPath, String fixtureBPath, String recordsPath) throws Exception {
         String bodyA = readFixture(fixtureAPath);
@@ -137,8 +146,20 @@ public class FixtureComparator {
         return "id_String";
     }
 
-    private static String readFixture(String path) throws Exception {
-        return Files.readString(Path.of(path));
+    /**
+     * Reads a fixture, confined to the fixtures directory. The path arrives
+     * from the client, so a path resolving outside the root (e.g. an absolute
+     * path or "../" traversal to /etc/passwd) is rejected rather than read.
+     */
+    private String readFixture(String path) throws Exception {
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("Fixture path is required");
+        }
+        Path resolved = Path.of(path).toAbsolutePath().normalize();
+        if (!resolved.startsWith(fixtureRoot)) {
+            throw new IllegalArgumentException("Fixture path is outside the fixtures directory");
+        }
+        return Files.readString(resolved);
     }
 
     private static boolean nullSafeEquals(String a, String b) {

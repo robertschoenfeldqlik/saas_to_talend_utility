@@ -6,6 +6,7 @@
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+const { stripAuthSecrets } = require('./authSecrets');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'projects.db');
 const dataDir = path.dirname(DB_PATH);
@@ -79,14 +80,46 @@ async function getDb() {
   db.run(`CREATE INDEX IF NOT EXISTS idx_fixtures_project_endpoint
           ON fixtures(projectId, endpointName, capturedAt DESC)`);
 
+  scrubLegacyAuthSecrets();
+
   saveDb();
   return db;
 }
 
+// One-time migration: remove secret values from any authConfig persisted by
+// older versions (which stored apiKey/token/password in plaintext). Idempotent
+// — only rewrites rows that still contain a secret key.
+function scrubLegacyAuthSecrets() {
+  let rows;
+  try {
+    const stmt = db.prepare('SELECT id, authConfig FROM projects');
+    rows = [];
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+  } catch {
+    return; // projects table not present yet
+  }
+  for (const r of rows) {
+    if (!r.authConfig) continue;
+    let parsed;
+    try { parsed = JSON.parse(r.authConfig); } catch { continue; }
+    const cleaned = JSON.stringify(stripAuthSecrets(parsed));
+    if (cleaned !== JSON.stringify(parsed)) {
+      db.run('UPDATE projects SET authConfig = ? WHERE id = ?', [cleaned, r.id]);
+    }
+  }
+}
+
 function saveDb() {
   if (!db) return;
-  const data = db.export();
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+  // Write to a temp file then atomically rename over the target. sql.js
+  // re-serializes the whole DB on every write; a crash mid-write would
+  // otherwise leave a truncated, unreadable projects.db. rename() is atomic
+  // on the same volume (POSIX, and Windows MoveFileEx-replace).
+  const data = Buffer.from(db.export());
+  const tmp = `${DB_PATH}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, DB_PATH);
 }
 
 function queryAll(sql, params = []) {

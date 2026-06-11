@@ -95,18 +95,25 @@ public class WorkspaceExporterService {
         return name.replaceAll("[^a-zA-Z0-9_-]", "_");
     }
 
+    /**
+     * Rejects archive entry paths that could escape the project directory when
+     * extracted (zip-slip / tar-slip): Windows drive prefixes and any ".."
+     * traversal segment. A single leading "/" is allowed (stripped by the
+     * caller) since it just denotes project-root-relative.
+     */
+    private static boolean isUnsafeArchivePath(String p) {
+        if (p == null || p.isBlank()) return true;
+        if (p.matches("^[A-Za-z]:.*")) return true;   // Windows drive (C:\…)
+        for (String seg : p.split("/")) {
+            if (seg.equals("..")) return true;        // parent traversal
+        }
+        return false;
+    }
+
     private void addZipEntry(ZipOutputStream zos, String path, String content) throws IOException {
         ZipEntry entry = new ZipEntry(path);
         zos.putNextEntry(entry);
         zos.write(content.getBytes(StandardCharsets.UTF_8));
-        zos.closeEntry();
-    }
-
-    private void addEmptyDir(ZipOutputStream zos, String path) throws IOException {
-        // Ensure path ends with / for directories
-        String dirPath = path.endsWith("/") ? path : path + "/";
-        ZipEntry entry = new ZipEntry(dirPath);
-        zos.putNextEntry(entry);
         zos.closeEntry();
     }
 
@@ -200,8 +207,16 @@ public class WorkspaceExporterService {
             for (Map.Entry<String, String> e : extraFiles.entrySet()) {
                 String relPath = e.getKey();
                 if (relPath == null || relPath.isBlank()) continue;
-                if (relPath.startsWith("/")) relPath = relPath.substring(1);
-                entries.add(new Entry(projectDir + "/" + relPath,
+                String normalized = relPath.replace('\\', '/');
+                // Reject path traversal — these entry names are extracted to
+                // disk by the consumer, so "../" would escape the project
+                // directory (zip-slip / tar-slip).
+                if (isUnsafeArchivePath(normalized)) {
+                    throw new IllegalArgumentException(
+                            "Unsafe file path in workspace export: " + relPath);
+                }
+                if (normalized.startsWith("/")) normalized = normalized.substring(1);
+                entries.add(new Entry(projectDir + "/" + normalized,
                         e.getValue() != null ? e.getValue() : ""));
             }
         }
