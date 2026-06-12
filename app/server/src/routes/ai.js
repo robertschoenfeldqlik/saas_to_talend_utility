@@ -165,7 +165,7 @@ Rules that MUST hold:
 INCLUDE when ALL are true:
 - HTTP method is GET
 - Endpoint returns a list / collection / array
-- Path does NOT end with a path parameter like /{id}, /:id, or /<id>
+- Path does NOT end with a path parameter or key — /{id}, /:id, /<id>, or OData-style ({id}). Only bulk/collection endpoints, never single-record by-key lookups.
 
 EXCLUDE silently (do not emit streams for these):
 - Any POST, PUT, PATCH, DELETE, HEAD, OPTIONS endpoint

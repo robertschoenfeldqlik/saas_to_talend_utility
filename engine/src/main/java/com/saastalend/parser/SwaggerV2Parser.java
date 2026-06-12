@@ -64,6 +64,12 @@ public class SwaggerV2Parser {
 
             // Get response schema
             Schema<?> responseSchema = extractResponseSchema(getOp);
+
+            // Bulk-load only: skip single-object responses (not collections).
+            if (!SchemaInspector.isCollectionResponse(responseSchema, openAPI)) {
+                continue;
+            }
+
             String recordsPath = SchemaInspector.inferRecordsPath(responseSchema, openAPI);
             List<String> primaryKeys = SchemaInspector.inferPrimaryKeys(getOp, openAPI);
             String replicationKey = SchemaInspector.detectReplicationKey(getOp);

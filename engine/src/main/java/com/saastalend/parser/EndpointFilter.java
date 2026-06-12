@@ -7,7 +7,12 @@ import java.util.regex.Pattern;
 
 public final class EndpointFilter {
 
-    private static final Pattern PATH_PARAM_SUFFIX = Pattern.compile("/\\{[^}]+}$");
+    // A "by-key" / single-record endpoint: the path ends in a path parameter or
+    // an OData-style key accessor — /{id}, /:id, /<id>, or ({key}) / (123).
+    // These return one record, not a collection, so they aren't bulk-load
+    // endpoints. (OData composite keys like ({a},{b}) are covered by [^)]*.)
+    private static final Pattern PATH_PARAM_SUFFIX = Pattern.compile(
+            "(/\\{[^}]+}|/:[^/]+|/<[^>]+>|\\([^)]*\\))/?$");
     private static final Pattern API_VERSION_PREFIX = Pattern.compile("^/?(api/)?v\\d+/");
     private static final Set<String> SKIP_SEGMENTS = Set.of("me", "self", "settings", "config", "health", "status", "ping");
 

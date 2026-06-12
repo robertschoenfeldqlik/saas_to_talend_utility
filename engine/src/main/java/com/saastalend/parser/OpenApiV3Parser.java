@@ -59,6 +59,13 @@ public class OpenApiV3Parser {
 
             // Get response schema
             Schema<?> responseSchema = extractResponseSchema(getOp, openAPI);
+
+            // Bulk-load only: skip endpoints whose response is a single object
+            // (e.g. a 1:1 sub-resource or singleton), not a collection.
+            if (!SchemaInspector.isCollectionResponse(responseSchema, openAPI)) {
+                continue;
+            }
+
             String recordsPath = SchemaInspector.inferRecordsPath(responseSchema, openAPI);
             List<String> primaryKeys = SchemaInspector.inferPrimaryKeys(getOp, openAPI);
             String replicationKey = SchemaInspector.detectReplicationKey(getOp);

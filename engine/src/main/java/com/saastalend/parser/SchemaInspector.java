@@ -78,6 +78,40 @@ public final class SchemaInspector {
     }
 
     /**
+     * True if the response represents a collection (bulk-loadable list): the body
+     * is an array, or an object with at least one array property (e.g. an OData
+     * {"value":[...]} or REST {"data":[...]} wrapper). Returns true for an
+     * unknown/opaque schema (benefit of the doubt) and false only when the
+     * response is positively a single object — e.g. a 1:1 sub-resource like a
+     * picture or a singleton entity — which isn't a bulk-load endpoint.
+     */
+    @SuppressWarnings("rawtypes")
+    public static boolean isCollectionResponse(Schema<?> responseSchema, OpenAPI spec) {
+        if (responseSchema == null) {
+            return true;
+        }
+        Schema<?> resolved = resolveSchema(responseSchema, spec);
+        if (resolved == null) {
+            return true;
+        }
+        if (resolved instanceof ArraySchema || "array".equals(resolved.getType())) {
+            return true;
+        }
+        Map<String, Schema> properties = resolved.getProperties();
+        if (properties == null || properties.isEmpty()) {
+            return true; // opaque object (e.g. a map) — don't over-filter
+        }
+        for (Schema<?> prop : properties.values()) {
+            Schema<?> resolvedProp = resolveSchema(prop, spec);
+            if (resolvedProp instanceof ArraySchema
+                    || (resolvedProp != null && "array".equals(resolvedProp.getType()))) {
+                return true;
+            }
+        }
+        return false; // object with defined scalar/ref properties, no array → single record
+    }
+
+    /**
      * Infers primary key fields from the items schema of a response.
      */
     @SuppressWarnings("rawtypes")
