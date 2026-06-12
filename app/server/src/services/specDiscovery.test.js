@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScriptSrcs } = require('./specDiscovery');
+const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScriptSrcs, findSpecDocLinks } = require('./specDiscovery');
 
 test('detectSpec recognizes OpenAPI JSON and YAML, rejects HTML/title', () => {
   assert.equal(detectSpec('{"openapi":"3.0.0","paths":{}}', 'application/json'), true);
@@ -44,6 +44,24 @@ test('findConfigScriptSrcs finds the initializer, ignores the ui bundle', () => 
   const html = `<script src="./swagger-initializer.js"></script><script src="./swagger-ui-bundle.js"></script>`;
   const srcs = findConfigScriptSrcs(html, 'https://petstore.swagger.io/');
   assert.deepStrictEqual(srcs, ['https://petstore.swagger.io/swagger-initializer.js']);
+});
+
+test('findEmbeddedSpecUrls resolves a relative .yaml href against the page URL', () => {
+  const html = `<a href="../v1.0/contracts/bcoas1.0.yaml">Download</a>`;
+  const urls = findEmbeddedSpecUrls(html, 'https://learn.microsoft.com/dynamics/api-reference/v2.0/dynamics-open-api');
+  assert.ok(urls.includes('https://learn.microsoft.com/dynamics/api-reference/v1.0/contracts/bcoas1.0.yaml'));
+});
+
+test('findSpecDocLinks follows a same-origin "OpenAPI specification" link', () => {
+  const html = `<p>See <a href="dynamics-open-api">OpenAPI specification</a> and
+                <a href="https://other.example/x">external</a> and
+                <a href="../v1.0/contracts/bcoas1.0.yaml">the yaml</a>.</p>`;
+  const links = findSpecDocLinks(html, 'https://learn.microsoft.com/dynamics/api-reference/v2.0/');
+  assert.ok(links.includes('https://learn.microsoft.com/dynamics/api-reference/v2.0/dynamics-open-api'));
+  // the direct .yaml is a spec file (handled elsewhere), not a doc page
+  assert.ok(!links.some((l) => l.endsWith('.yaml')));
+  // external-origin links are excluded
+  assert.ok(!links.some((l) => l.includes('other.example')));
 });
 
 test('conventionalSpecUrls builds origin + relative candidates', () => {

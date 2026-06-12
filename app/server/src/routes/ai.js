@@ -4,9 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../logger');
 const { resolveOllamaUrl, defaultOllamaUrl, inContainer, probeOllama, candidatesForOllama } = require('../services/ollamaHost');
-const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScriptSrcs } = require('../services/specDiscovery');
+const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScriptSrcs, findSpecDocLinks } = require('../services/specDiscovery');
 const { isEdmx, odataVersion, parseEdmxToConfig } = require('../services/odataMetadata');
 const { headlessAvailable, renderPage } = require('../services/headlessRender');
+const { classifyPage } = require('../services/pageClassifier');
 const dns = require('dns');
 const http = require('http');
 const https = require('https');
@@ -758,6 +759,32 @@ async function fetchRaw(urlString) {
   };
 }
 
+// POST /api/ai/classify-url — pre-flight: fetch a URL (static, no headless) and
+// return the detection schema so the UI can tell the user what kind of page it
+// is (spec / OData metadata / Swagger UI / JS-rendered SPA / static docs / thin)
+// before running full discovery.
+router.post('/classify-url', async (req, res) => {
+  const { url } = req.body || {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+  let parsedUrl;
+  try { parsedUrl = new URL(url.trim()); } catch { return res.status(400).json({ error: `Not a valid URL: "${url}"` }); }
+  if (!/^https?:$/i.test(parsedUrl.protocol)) {
+    return res.status(400).json({ error: 'Only http:// and https:// URLs are supported.' });
+  }
+  try {
+    const r = await fetchRaw(parsedUrl.toString());
+    if (r.status < 200 || r.status >= 300) {
+      return res.status(502).json({ error: `Upstream returned HTTP ${r.status} for ${parsedUrl.hostname}` });
+    }
+    const detection = classifyPage(r.text, { url: parsedUrl.toString(), contentType: r.contentType });
+    return res.json({ url: parsedUrl.toString(), contentType: r.contentType, detection });
+  } catch (err) {
+    return res.status(502).json({ error: `Failed to fetch URL: ${err.message}`, code: err.code });
+  }
+});
+
 router.post('/fetch-url', async (req, res) => {
   const { url } = req.body || {};
   if (!url || typeof url !== 'string') {
@@ -820,6 +847,7 @@ router.post('/fetch-url', async (req, res) => {
     let isSpec = detectSpec(text, contentType);
     let resolvedSpecUrl;
     let renderedByHeadless = false;
+    const detection = classifyPage(text, { url: parsedUrl.toString(), contentType });
 
     // Direction 2: if this is an HTML docs page (Swagger UI / Redoc / portal),
     // find the real machine-readable spec it points at and fetch THAT, so the
@@ -859,15 +887,40 @@ router.post('/fetch-url', async (req, res) => {
       }
     }
 
+    // Doc-index follow: an API documentation landing page often links to a
+    // separate "OpenAPI specification" page that holds the actual .yaml/.json.
+    // Follow up to a few such same-origin links one hop and resolve the spec.
+    if (!isSpec && looksHtml) {
+      for (const docUrl of findSpecDocLinks(text, parsedUrl.toString())) {
+        try {
+          const doc = await fetchRaw(docUrl);
+          if (doc.status < 200 || doc.status >= 300) continue;
+          if (detectSpec(doc.text, doc.contentType)) {
+            text = doc.text; isSpec = true; resolvedSpecUrl = docUrl; break;
+          }
+          let found = false;
+          for (const cand of findEmbeddedSpecUrls(doc.text, docUrl)) {
+            try {
+              const rr = await fetchRaw(cand);
+              if (rr.status >= 200 && rr.status < 300 && detectSpec(rr.text, rr.contentType)) {
+                text = rr.text; isSpec = true; resolvedSpecUrl = cand; found = true; break;
+              }
+            } catch { /* next candidate */ }
+          }
+          if (found) {
+            logger.info({ from: parsedUrl.toString(), via: docUrl, resolvedSpecUrl }, 'Resolved spec via doc-index link');
+            break;
+          }
+        } catch { /* next doc link */ }
+      }
+    }
+
     // Direction 3: if we still have no spec and the page looks JS-rendered (a
     // near-empty shell), render it with a headless browser to get the real
     // content, then re-run spec / embedded-spec detection on the rendered DOM.
     // Best-effort: a render failure or no headless available leaves the static
     // content untouched (the thin-content guard then refuses safely).
-    const peek = (text.includes('<html') || text.includes('<!DOCTYPE')) ? stripHtmlToText(text) : text;
-    const looksShell = !isSpec && (peek.trim().length < 300
-      || /<div id=["']root["']|window\.__|__NEXT_DATA__|please enable javascript/i.test(text));
-    if (looksShell && headlessAvailable()) {
+    if (!isSpec && detection.isJsRendered && headlessAvailable()) {
       try {
         const rendered = await renderPage(parsedUrl.toString());
         renderedByHeadless = true;
@@ -884,7 +937,7 @@ router.post('/fetch-url', async (req, res) => {
               }
             } catch { /* try next candidate */ }
           }
-          if (!resolved && rendered.text && rendered.text.trim().length > peek.trim().length) {
+          if (!resolved && rendered.text && rendered.text.trim().length > detection.textLength) {
             text = rendered.text; // rendered visible text for the AI fallback
           }
         }
@@ -900,12 +953,14 @@ router.post('/fetch-url', async (req, res) => {
       text = stripHtmlToText(text);
     }
 
-    // Truncate to 60K chars for AI processing
-    if (text.length > 60_000) {
+    // Truncate to 60K chars for the AI text path ONLY — never truncate a
+    // machine-readable spec (it goes to the deterministic engine, and clipping
+    // it produces invalid YAML/JSON).
+    if (!isSpec && text.length > 60_000) {
       text = text.substring(0, 60_000) + '\n\n[Content truncated at 60,000 characters]';
     }
 
-    res.json({ content: text, contentType, isSpec, fetchedFrom: parsedUrl.toString(), resolvedSpecUrl, renderedByHeadless });
+    res.json({ content: text, contentType, isSpec, fetchedFrom: parsedUrl.toString(), resolvedSpecUrl, renderedByHeadless, detection });
   } catch (err) {
     logger.error({ msg: err.message, code: err.code, url: parsedUrl.toString() }, 'Failed to fetch URL');
 

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.converter.SwaggerConverter;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import lombok.AllArgsConstructor;
@@ -52,7 +53,15 @@ public class OpenApiParserService {
         options.setResolve(true);
         options.setResolveFully(true);
 
-        SwaggerParseResult parseResult = new OpenAPIV3Parser().readContents(specContent, null, options);
+        // Swagger 2.0 specs must be routed through the v2->v3 converter
+        // explicitly. OpenAPIV3Parser is supposed to auto-detect 2.0 via a
+        // ServiceLoader extension, but that lookup doesn't resolve inside the
+        // Spring Boot fat jar, so a 2.0 doc would otherwise fail with the
+        // misleading "attribute openapi is missing".
+        boolean isSwagger2 = looksLikeSwagger2(specContent);
+        SwaggerParseResult parseResult = isSwagger2
+                ? new SwaggerConverter().readContents(specContent, null, options)
+                : new OpenAPIV3Parser().readContents(specContent, null, options);
 
         if (parseResult.getMessages() != null) {
             warnings.addAll(parseResult.getMessages());
@@ -84,13 +93,8 @@ public class OpenApiParserService {
         // Detect auth
         AuthConfig auth = AuthDetector.detect(openAPI);
 
-        // Detect spec version and parse accordingly
+        // Parse endpoints with the version-appropriate extractor.
         List<DiscoveredEndpoint> endpoints;
-        boolean isSwagger2 = specContent.contains("\"swagger\"") && specContent.contains("\"2.");
-        if (!isSwagger2) {
-            isSwagger2 = specContent.contains("swagger:") && specContent.contains("'2.");
-        }
-
         if (isSwagger2) {
             SwaggerV2Parser v2Parser = new SwaggerV2Parser();
             endpoints = v2Parser.parse(openAPI);
@@ -132,5 +136,13 @@ public class OpenApiParserService {
                         + "\". Inline the referenced definition and retry.");
             }
         }
+    }
+
+    private static final java.util.regex.Pattern SWAGGER2_RE =
+            java.util.regex.Pattern.compile("[\"']?swagger[\"']?\\s*:\\s*[\"']?2\\.");
+
+    /** True if the spec declares Swagger/OpenAPI 2.0 (vs OpenAPI 3.x). */
+    static boolean looksLikeSwagger2(String spec) {
+        return spec != null && SWAGGER2_RE.matcher(spec).find();
     }
 }
