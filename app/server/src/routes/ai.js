@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../logger');
 const { resolveOllamaUrl, defaultOllamaUrl, inContainer, probeOllama, candidatesForOllama } = require('../services/ollamaHost');
+const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScriptSrcs } = require('../services/specDiscovery');
+const { isEdmx, odataVersion, parseEdmxToConfig } = require('../services/odataMetadata');
+const { headlessAvailable, renderPage } = require('../services/headlessRender');
 const dns = require('dns');
 const http = require('http');
 const https = require('https');
@@ -147,6 +150,14 @@ Rules that MUST hold:
 - No trailing commas. Use double quotes for all strings.
 - Always include every key shown above for each stream, even if empty.
 - "params" is always an object — use {} when there are no defaults.
+- NEVER invent endpoints. Emit a stream ONLY if its path or name literally
+  appears in the API DOCUMENTATION the user provides. The examples in this
+  prompt are FORMAT illustrations only — never copy their names or paths
+  (e.g. "products", "/products.json") into your output unless they actually
+  appear in the user's docs.
+- If the documentation contains no GET list endpoints you can identify, return
+  {"api_url":"","auth_method":"no_auth","streams":[]} — an empty streams array
+  is correct. Do NOT pad it with guesses.
 
 ## INCLUSION RULES (what becomes a stream)
 
@@ -724,6 +735,29 @@ function stripHtmlToText(html) {
  *   - Reject obviously bad URLs (missing scheme, non-HTTP/HTTPS) with 400
  *     before making any outbound call.
  */
+// Fetch a candidate spec URL with the same SSRF protections as the main fetch.
+async function fetchRaw(urlString) {
+  const resp = await axios.get(urlString, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; SaaSToTalend/1.0; +https://github.com/robertschoenfeldqlik/SaaS-To_Qlik)',
+      'Accept': 'application/json,application/yaml,text/yaml,application/xml,text/plain,*/*',
+    },
+    timeout: 20_000,
+    maxRedirects: 5,
+    maxContentLength: 20 * 1024 * 1024,
+    maxBodyLength: 20 * 1024 * 1024,
+    httpAgent: ssrfSafeHttpAgent,
+    httpsAgent: ssrfSafeHttpsAgent,
+    transformResponse: [(d) => d],
+    validateStatus: () => true,
+  });
+  return {
+    status: resp.status,
+    text: typeof resp.data === 'string' ? resp.data : '',
+    contentType: (resp.headers['content-type'] || '').toLowerCase(),
+  };
+}
+
 router.post('/fetch-url', async (req, res) => {
   const { url } = req.body || {};
   if (!url || typeof url !== 'string') {
@@ -783,19 +817,85 @@ router.post('/fetch-url', async (req, res) => {
     let text = typeof response.data === 'string' ? response.data : '';
     const contentType = (response.headers['content-type'] || '').toLowerCase();
 
-    // Detect OpenAPI/Swagger spec from BOTH JSON and YAML responses.
-    let isSpec = false;
-    if (contentType.includes('json') || /^\s*\{/.test(text)) {
-      try {
-        const parsed = JSON.parse(text);
-        if (parsed.openapi || parsed.swagger || parsed.paths) isSpec = true;
-      } catch {}
-    } else if (/^\s*(openapi|swagger)\s*:\s*['"]?\d/m.test(text)) {
-      // Quick YAML smoke test — "openapi: 3.0.0" or "swagger: '2.0'"
-      isSpec = true;
+    let isSpec = detectSpec(text, contentType);
+    let resolvedSpecUrl;
+    let renderedByHeadless = false;
+
+    // Direction 2: if this is an HTML docs page (Swagger UI / Redoc / portal),
+    // find the real machine-readable spec it points at and fetch THAT, so the
+    // spec is parsed deterministically instead of an LLM reading rendered HTML.
+    const looksHtml = text.includes('<html') || text.includes('<!DOCTYPE')
+      || /<link\b|<redoc\b|swaggerui|swagger-ui|redoc|rapidoc/i.test(text);
+    if (!isSpec && looksHtml) {
+      const mentionsApiDoc = /swagger|openapi|redoc|rapidoc|api-?docs/i.test(text);
+      let candidates = findEmbeddedSpecUrls(text, parsedUrl.toString());
+      // Swagger UI frequently puts the spec URL in an external initializer
+      // script (swagger-initializer.js) rather than the HTML — follow those.
+      if (candidates.length === 0) {
+        for (const src of findConfigScriptSrcs(text, parsedUrl.toString())) {
+          try {
+            const js = await fetchRaw(src);
+            if (js.status >= 200 && js.status < 300) {
+              candidates = findEmbeddedSpecUrls(js.text, src);
+              if (candidates.length) break;
+            }
+          } catch { /* try next script */ }
+        }
+      }
+      if (candidates.length === 0 && mentionsApiDoc) {
+        candidates.push(...conventionalSpecUrls(parsedUrl.toString()));
+      }
+      for (const cand of candidates) {
+        try {
+          const r = await fetchRaw(cand);
+          if (r.status >= 200 && r.status < 300 && detectSpec(r.text, r.contentType)) {
+            text = r.text;
+            isSpec = true;
+            resolvedSpecUrl = cand;
+            logger.info({ from: parsedUrl.toString(), resolvedSpecUrl }, 'Resolved embedded API spec');
+            break;
+          }
+        } catch { /* try next candidate */ }
+      }
     }
 
-    // Strip HTML if it's docs (not a spec)
+    // Direction 3: if we still have no spec and the page looks JS-rendered (a
+    // near-empty shell), render it with a headless browser to get the real
+    // content, then re-run spec / embedded-spec detection on the rendered DOM.
+    // Best-effort: a render failure or no headless available leaves the static
+    // content untouched (the thin-content guard then refuses safely).
+    const peek = (text.includes('<html') || text.includes('<!DOCTYPE')) ? stripHtmlToText(text) : text;
+    const looksShell = !isSpec && (peek.trim().length < 300
+      || /<div id=["']root["']|window\.__|__NEXT_DATA__|please enable javascript/i.test(text));
+    if (looksShell && headlessAvailable()) {
+      try {
+        const rendered = await renderPage(parsedUrl.toString());
+        renderedByHeadless = true;
+        if (detectSpec(rendered.html, 'text/html')) {
+          text = rendered.html;
+          isSpec = true;
+        } else {
+          let resolved = false;
+          for (const cand of findEmbeddedSpecUrls(rendered.html, parsedUrl.toString())) {
+            try {
+              const rr = await fetchRaw(cand);
+              if (rr.status >= 200 && rr.status < 300 && detectSpec(rr.text, rr.contentType)) {
+                text = rr.text; isSpec = true; resolvedSpecUrl = cand; resolved = true; break;
+              }
+            } catch { /* try next candidate */ }
+          }
+          if (!resolved && rendered.text && rendered.text.trim().length > peek.trim().length) {
+            text = rendered.text; // rendered visible text for the AI fallback
+          }
+        }
+        logger.info({ url: parsedUrl.toString(), isSpec, renderedChars: rendered.text?.length || 0 },
+          'Headless-rendered a JS page');
+      } catch (e) {
+        logger.warn({ url: parsedUrl.toString(), err: e.message }, 'Headless render failed; using static content');
+      }
+    }
+
+    // Still just HTML docs (no spec found) → strip to text for the AI fallback.
     if (!isSpec && (text.includes('<html') || text.includes('<!DOCTYPE'))) {
       text = stripHtmlToText(text);
     }
@@ -805,7 +905,7 @@ router.post('/fetch-url', async (req, res) => {
       text = text.substring(0, 60_000) + '\n\n[Content truncated at 60,000 characters]';
     }
 
-    res.json({ content: text, contentType, isSpec, fetchedFrom: parsedUrl.toString() });
+    res.json({ content: text, contentType, isSpec, fetchedFrom: parsedUrl.toString(), resolvedSpecUrl, renderedByHeadless });
   } catch (err) {
     logger.error({ msg: err.message, code: err.code, url: parsedUrl.toString() }, 'Failed to fetch URL');
 
@@ -845,8 +945,37 @@ router.post('/fetch-url', async (req, res) => {
 router.post('/generate-config', async (req, res) => {
   try {
     const { content, prompt, provider: overrideProvider, model: overrideModel } = req.body;
-    if (!content || content.length < 20) {
+    const sourceText = (typeof content === 'string' ? content : '').trim();
+    if (!sourceText || sourceText.length < 20) {
       return res.status(400).json({ error: 'Content must be at least 20 characters' });
+    }
+
+    // Direction 1: an OData $metadata (EDMX) document is parsed deterministically
+    // and never sent to the LLM, so its endpoint list cannot be hallucinated.
+    if (isEdmx(sourceText)) {
+      const cfg = parseEdmxToConfig(sourceText);
+      const ver = odataVersion(sourceText);
+      logger.info({ streams: cfg.streams.length, odataVersion: ver }, 'Parsed OData EDMX deterministically (no LLM)');
+      return res.json({
+        config: cfg,
+        streams_count: cfg.streams.length,
+        metadata: { provider: 'deterministic', model: `odata_v${ver}_metadata`, tokens: 0, droppedUngrounded: 0 },
+      });
+    }
+
+    // Thin-content guard: a page that returned only its <title> or an unrendered
+    // JS shell has no real endpoints — feeding it to the model just invites
+    // hallucinated ones. Real API docs reference a path, an HTTP method, or a
+    // spec keyword; if none are present and the text is short, refuse up front.
+    const looksLikeShell = /<div id=["']root["']|window\.__|__NEXT_DATA__|please enable javascript/i.test(sourceText);
+    const hasApiSignal = /(\/[a-z0-9_{}-]+)|\b(GET|POST|PUT|DELETE|PATCH)\b|openapi|swagger|endpoint|\bapi\b|https?:\/\//i.test(sourceText);
+    if (looksLikeShell || (sourceText.length < 600 && !hasApiSignal)) {
+      return res.status(422).json({
+        error: 'No readable API documentation found on that page.',
+        code: 'THIN_CONTENT',
+        hint: 'The page returned almost no text — it may be JavaScript-rendered (e.g. a help-portal SPA) or behind auth. Paste the OpenAPI/Swagger spec or OData $metadata directly, or link to a raw spec file.',
+        contentLength: sourceText.length,
+      });
     }
 
     // Resolve provider (per-request override or global setting)
@@ -887,6 +1016,45 @@ router.post('/generate-config', async (req, res) => {
     // Parse the AI response
     const parsed = parseAiResponse(result.text);
 
+    // Ground the model's output in the actual source. A weak model will invent
+    // plausible endpoints — or echo the examples in this prompt — that aren't in
+    // the docs at all. Drop any stream whose path/name doesn't literally appear
+    // in the content we sent. (Only the LLM path runs here; deterministic
+    // OpenAPI parsing happens in the Java engine and is unaffected.)
+    const hay = String(content).toLowerCase();
+    const inSource = (s) => {
+      const cands = [];
+      if (s && s.path) {
+        const p = String(s.path).toLowerCase();
+        cands.push(p, p.replace(/^\/+/, '').replace(/\.[a-z0-9]+$/, ''));
+        const last = p.replace(/^\/+/, '').split(/[/?]/).filter(Boolean).pop();
+        if (last) cands.push(last);
+      }
+      if (s && s.name) cands.push(String(s.name).toLowerCase().replace(/_/g, ''));
+      return cands.some((c) => c && c.length >= 3 && hay.includes(c));
+    };
+
+    let droppedStreams = [];
+    if (parsed && Array.isArray(parsed.streams) && parsed.streams.length > 0) {
+      const kept = parsed.streams.filter(inSource);
+      droppedStreams = parsed.streams.filter((s) => !inSource(s));
+      if (kept.length === 0) {
+        // Everything the model returned was ungrounded — almost certainly
+        // hallucinated. Fail loudly instead of handing back fiction.
+        logger.warn({
+          model: config.model,
+          dropped: droppedStreams.map((s) => s.path || s.name).slice(0, 10),
+        }, 'All AI-discovered endpoints were ungrounded — rejecting');
+        return res.status(422).json({
+          error: 'The model returned endpoints that do not appear in the source documentation — they were almost certainly hallucinated, so nothing was kept.',
+          code: 'UNGROUNDED_OUTPUT',
+          hint: 'This is common with small local models or JS-rendered/empty pages. Paste the OpenAPI/Swagger spec or OData $metadata directly, or switch to a larger model.',
+          droppedExamples: droppedStreams.map((s) => s.path || s.name).filter(Boolean).slice(0, 8),
+        });
+      }
+      parsed.streams = kept;
+    }
+
     logger.info({
       provider: effectiveProvider,
       model: config.model,
@@ -902,6 +1070,7 @@ router.post('/generate-config', async (req, res) => {
         provider: result.provider,
         model: result.model,
         tokens: result.tokens,
+        droppedUngrounded: droppedStreams.length,
       },
     });
   } catch (err) {

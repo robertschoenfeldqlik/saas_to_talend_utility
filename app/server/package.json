@@ -20,6 +20,7 @@
     "multer": "^2.1.1",
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
+    "puppeteer-core": "^25.1.0",
     "sql.js": "^1.10.0"
   },
   "devDependencies": {

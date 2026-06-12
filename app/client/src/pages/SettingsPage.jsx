@@ -485,6 +485,23 @@ export default function SettingsPage() {
                   ))
               }
             </select>
+            {aiProvider === 'ollama' && aiModel && (() => {
+              const mm = aiModel.match(/(\d+(?:\.\d+)?)\s*b\b/i);
+              const sizeB = mm ? parseFloat(mm[1]) : null;
+              if (sizeB === null || sizeB >= 7) return null;
+              return (
+                <div className="mt-2 p-3 rounded-lg text-xs flex items-start gap-2"
+                     style={{ background: 'rgb(254 243 199)', color: 'rgb(120 53 15)' }}>
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <span className="font-semibold">Small model ({sizeB}B) — may hallucinate endpoints.</span>{' '}
+                    Models under ~7B often invent endpoints that aren't in the docs, especially on
+                    thin or JS-rendered pages. Prefer a 7B+ model, or paste the OpenAPI/Swagger spec
+                    (or OData <code>$metadata</code>) directly for deterministic results.
+                  </div>
+                </div>
+              );
+            })()}
             {aiProvider === 'ollama' && ollamaError && (
               <div className="mt-2 p-3 rounded-lg text-xs flex items-start gap-2"
                    style={{ background: 'rgb(254 243 199)', color: 'rgb(120 53 15)' }}>

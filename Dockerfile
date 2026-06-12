@@ -54,7 +54,12 @@ FROM node:22-alpine
 # transitive deps (e.g. picomatch) showing up in CVE scans for no reason.
 # Server + client modules are already installed in their respective build
 # stages and copied over below.
+# chromium (+ its runtime libs/fonts) backs the optional headless renderer used
+# for JS-rendered API-doc pages; puppeteer-core drives this system binary rather
+# than downloading its own. If you don't need headless rendering you can drop
+# the chromium packages to shrink the image by ~250 MB.
 RUN apk add --no-cache openjdk17-jre bash curl tini \
+      chromium nss freetype harfbuzz ca-certificates ttf-freefont \
  && npm uninstall -g npm 2>/dev/null || true \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
@@ -93,7 +98,9 @@ USER node
 ENV NODE_ENV=production \
     ENGINE_URL=http://localhost:8081 \
     PORT=3000 \
-    HOST=0.0.0.0
+    HOST=0.0.0.0 \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    PUPPETEER_SKIP_DOWNLOAD=1
 
 # Only 3000 is meant to be published. The Java engine on 8081 is an internal
 # implementation detail fronted by the Express proxy — do not EXPOSE it, or
