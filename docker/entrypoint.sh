@@ -11,7 +11,7 @@ cd /opt/app
 
 # ── 1. Start the Java engine in the background ────────────────────────────
 echo "[entrypoint] starting Java engine on :8081 ..."
-java -jar ./engine.jar \
+java ${JAVA_OPTS:--Xmx4g} -jar ./engine.jar \
      --server.port=8081 \
      --spring.main.banner-mode=off \
      > /tmp/engine.log 2>&1 &

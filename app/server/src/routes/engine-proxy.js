@@ -36,7 +36,9 @@ router.all('/*', async (req, res) => {
         'Content-Type': 'application/json',
         'Accept': req.headers.accept || 'application/json',
       },
-      timeout: 60000,
+      timeout: 180000,                 // big specs (GitHub/Stripe) parse slowly
+      maxBodyLength: Infinity,         // don't cap the forwarded spec body
+      maxContentLength: Infinity,
       responseType: path.includes('/export') ? 'arraybuffer' : 'json',
       validateStatus: () => true, // don't throw on 4xx/5xx
     });

@@ -18,7 +18,7 @@ app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); // large OpenAPI specs (e.g. GitHub ~12 MB)
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging

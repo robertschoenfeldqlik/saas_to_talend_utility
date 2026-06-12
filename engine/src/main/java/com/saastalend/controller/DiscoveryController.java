@@ -15,7 +15,7 @@ public class DiscoveryController {
      *  At ~2 bytes/char average this is ~10 MB on the wire, ~5 MB of UTF-8 text.
      *  Larger specs almost always indicate a denial-of-service attempt or a
      *  spec we couldn't handle in 8k context anyway. */
-    private static final int MAX_SPEC_CHARS = 5_000_000;
+    private static final int MAX_SPEC_CHARS = 50_000_000;
 
     private final OpenApiParserService parserService;
 
