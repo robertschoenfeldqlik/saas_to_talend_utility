@@ -130,12 +130,25 @@ public class OpenApiParserService {
         java.util.regex.Matcher m = REF_RE.matcher(specContent);
         while (m.find()) {
             String ref = m.group(1);
-            if (ref != null && !ref.isEmpty() && !ref.startsWith("#")) {
+            if (isExternalRef(ref)) {
                 throw new IllegalArgumentException(
                         "External $ref is not allowed in the spec: \"" + ref
                         + "\". Inline the referenced definition and retry.");
             }
         }
+    }
+
+    /**
+     * True only for $ref values that actually point outside the document — a URL
+     * or a file path (optionally with a #fragment). Internal pointers ("#/…") and
+     * loose-regex false matches (e.g. a YAML "$ref: >-" folded scalar, seen in the
+     * OpenAI spec) are not external refs and must not be rejected.
+     */
+    private static boolean isExternalRef(String ref) {
+        if (ref == null || ref.isEmpty() || ref.startsWith("#")) return false;
+        return ref.contains("://")
+                || ref.contains("/") || ref.contains("\\")
+                || ref.matches("(?i).*\\.(ya?ml|json)(#.*)?$");
     }
 
     private static final java.util.regex.Pattern SWAGGER2_RE =

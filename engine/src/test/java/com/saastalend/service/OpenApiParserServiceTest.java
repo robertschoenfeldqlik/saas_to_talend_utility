@@ -67,4 +67,12 @@ class OpenApiParserServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> OpenApiParserService.assertNoExternalRefs("{\"$ref\":\"./common.yaml#/X\"}"));
     }
+
+    @Test
+    void allowsYamlFoldedScalarFalseMatch() {
+        // A loose regex matches "$ref: >-" (a YAML folded scalar, as in the OpenAI
+        // spec); it is not a real external ref and must not be rejected.
+        assertDoesNotThrow(() -> OpenApiParserService.assertNoExternalRefs("summary:\n  $ref: >-\n    some text"));
+        assertDoesNotThrow(() -> OpenApiParserService.assertNoExternalRefs("{\"$ref\":\"true\"}"));
+    }
 }
