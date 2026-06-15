@@ -82,8 +82,8 @@ const outputTypes = [
     label: 'JSON File',
     description: 'tFileOutputJSON — Write records to a JSON file',
     icon: FileOutput,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
+    color: 'text-[rgb(var(--color-text-secondary))]',
+    bgColor: 'bg-[rgb(var(--color-surface-alt))]',
   },
   {
     value: 'log',
@@ -98,8 +98,8 @@ const outputTypes = [
     label: 'Database',
     description: 'Insert into PostgreSQL, MySQL, Snowflake, Redshift, SQL Server, Oracle, BigQuery, SQLite',
     icon: Database,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: 'text-brand-500',
+    bgColor: 'bg-brand-500/10',
   },
 ];
 

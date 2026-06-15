@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { Search, ChevronDown, ChevronRight } from 'lucide-react';
 
 const LAYER_STYLES = {
-  staging: 'bg-blue-500/10 text-blue-600',
-  intermediate: 'bg-purple-500/10 text-purple-600',
-  marts: 'bg-emerald-500/10 text-emerald-600',
-  other: 'bg-gray-500/10 text-gray-600',
+  staging: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]',
+  intermediate: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]',
+  marts: 'bg-brand-500/10 text-brand-600',
+  other: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-muted))]',
 };
 
 export default function DbtModelList({ models = [], selectedNames, onToggle, onToggleAll }) {
@@ -112,7 +112,7 @@ export default function DbtModelList({ models = [], selectedNames, onToggle, onT
                       {m.sources?.map((s) => (
                         <span
                           key={`src-${s}`}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 font-mono"
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))] font-mono"
                         >
                           src:{s}
                         </span>
@@ -120,7 +120,7 @@ export default function DbtModelList({ models = [], selectedNames, onToggle, onT
                       {m.refs?.map((r) => (
                         <span
                           key={`ref-${r}`}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono"
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-600 font-mono"
                         >
                           ref:{r}
                         </span>

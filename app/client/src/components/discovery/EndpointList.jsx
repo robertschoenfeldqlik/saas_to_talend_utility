@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 
 const methodColors = {
-  GET: 'bg-blue-500/10 text-blue-600',
-  POST: 'bg-green-500/10 text-green-600',
+  GET: 'bg-brand-500/10 text-brand-600',
+  POST: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]',
   PUT: 'bg-amber-500/10 text-amber-600',
   DELETE: 'bg-red-500/10 text-red-600',
-  PATCH: 'bg-purple-500/10 text-purple-600',
+  PATCH: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]',
 };
 
 // First non-parameter path segment, used to group endpoints by resource.
@@ -129,7 +129,7 @@ export default function EndpointList({ endpoints, selected, onToggle }) {
                     <span className="text-xs ml-2 font-mono break-all" style={{ color: 'rgb(var(--color-text-secondary))' }}>{ep.path}</span>
                   </div>
                   {pg && pg !== 'none' && (
-                    <span className="badge bg-purple-500/10 text-purple-600 text-[10px] shrink-0">{pg}</span>
+                    <span className="badge bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))] text-[10px] shrink-0">{pg}</span>
                   )}
                 </div>
 

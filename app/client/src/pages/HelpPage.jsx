@@ -318,10 +318,10 @@ function Section({ icon: Icon, title, children, defaultOpen = true, accent = 'br
   const [open, setOpen] = useState(defaultOpen);
   const bg = {
     brand: 'bg-brand-500/10 text-brand-500',
-    blue: 'bg-blue-500/10 text-blue-500',
-    purple: 'bg-purple-500/10 text-purple-500',
+    blue: 'bg-brand-500/10 text-brand-500',
+    purple: 'bg-brand-500/10 text-brand-500',
     amber: 'bg-amber-500/10 text-amber-500',
-    emerald: 'bg-emerald-500/10 text-emerald-500',
+    emerald: 'bg-brand-500/10 text-brand-500',
   }[accent] || 'bg-brand-500/10 text-brand-500';
 
   return (
@@ -392,14 +392,14 @@ export default function HelpPage() {
             </div>
           </div>
           <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-            <Database className="w-5 h-5 text-blue-500 mb-2" />
+            <Database className="w-5 h-5 text-brand-500 mb-2" />
             <div className="text-sm font-semibold" style={{ color: 'rgb(var(--color-text))' }}>Database Sources</div>
             <div className="text-xs mt-1" style={{ color: 'rgb(var(--color-text-secondary))' }}>
               PostgreSQL, MySQL, SQL Server, Oracle, Snowflake, Redshift, BigQuery, SQLite — JDBC schema scan.
             </div>
           </div>
           <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-            <FileCode className="w-5 h-5 text-purple-500 mb-2" />
+            <FileCode className="w-5 h-5 text-brand-500 mb-2" />
             <div className="text-sm font-semibold" style={{ color: 'rgb(var(--color-text))' }}>Outputs</div>
             <div className="text-xs mt-1" style={{ color: 'rgb(var(--color-text-secondary))' }}>
               Talend jobs (.item/.properties) or dbt staging models (<code>stg_*.sql</code> + <code>sources.yml</code>).
@@ -606,7 +606,7 @@ export default function HelpPage() {
         <CodeBlock>{LLM_SYSTEM_PROMPT}</CodeBlock>
 
         <h3 className="text-sm font-semibold mt-5 mb-2 flex items-center gap-2" style={{ color: 'rgb(var(--color-text))' }}>
-          <Terminal className="w-4 h-4 text-blue-500" /> User prompt template
+          <Terminal className="w-4 h-4 text-brand-500" /> User prompt template
         </h3>
         <p className="text-xs mb-2" style={{ color: 'rgb(var(--color-text-muted))' }}>
           For OpenAI, the suffix <em>"Return the response as a valid JSON object."</em> is auto-appended if the word "JSON" is missing — required by OpenAI's <code>response_format: json_object</code> mode.
@@ -614,7 +614,7 @@ export default function HelpPage() {
         <CodeBlock>{LLM_USER_PROMPT_TEMPLATE}</CodeBlock>
 
         <h3 className="text-sm font-semibold mt-5 mb-2 flex items-center gap-2" style={{ color: 'rgb(var(--color-text))' }}>
-          <Terminal className="w-4 h-4 text-purple-500" /> Test Connection prompt
+          <Terminal className="w-4 h-4 text-brand-500" /> Test Connection prompt
         </h3>
         <p className="text-xs mb-2" style={{ color: 'rgb(var(--color-text-muted))' }}>
           Used by Settings → Test Connection. For Ollama it's replaced with a GET <code>/api/tags</code> call so we don't need to invoke the model.

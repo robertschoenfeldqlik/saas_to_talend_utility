@@ -517,11 +517,11 @@ export default function ApiSourceWizard() {
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Endpoints Selected</div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-blue-600 capitalize">{authConfig.type}</div>
+                    <div className="text-2xl font-bold text-brand-600 capitalize">{authConfig.type}</div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Auth Type</div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-purple-600 uppercase">{outputType}</div>
+                    <div className="text-2xl font-bold text-brand-600 uppercase">{outputType}</div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Output Format</div>
                   </div>
                 </div>

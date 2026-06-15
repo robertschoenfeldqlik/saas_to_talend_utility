@@ -15,7 +15,7 @@ import { getProjects, getProjectJobs, deleteJobs, deleteProject } from '../api/c
 
 const statusColors = {
   draft: 'bg-gray-400/10 text-gray-500',
-  generated: 'bg-blue-500/10 text-blue-600',
+  generated: 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]',
   exported: 'bg-brand-500/10 text-brand-600',
 };
 
@@ -406,8 +406,8 @@ export default function JobListPage() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                                 />
-                                <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                  <Briefcase className="w-3.5 h-3.5 text-blue-500" />
+                                <div className="w-7 h-7 rounded-lg bg-brand-500/10 flex items-center justify-center">
+                                  <Briefcase className="w-3.5 h-3.5 text-brand-500" />
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">

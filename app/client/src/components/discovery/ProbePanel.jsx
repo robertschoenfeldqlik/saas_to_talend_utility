@@ -153,7 +153,7 @@ function ProbeResultRow({ endpoint, result, onRerun }) {
   }
   const isError = result.error || (result.statusCode && result.statusCode >= 400);
   const Icon = isError ? AlertTriangle : CheckCircle2;
-  const tone = isError ? 'text-amber-600' : 'text-emerald-600';
+  const tone = isError ? 'text-amber-600' : 'text-brand-600';
 
   return (
     <div className="p-3 rounded-lg border"

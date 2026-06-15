@@ -54,7 +54,7 @@ export default function TableList({ tables, selectedNames, onToggle, onToggleAll
                 {isExpanded
                   ? <ChevronDown className="w-4 h-4" style={{ color: 'rgb(var(--color-text-muted))' }} />
                   : <ChevronRight className="w-4 h-4" style={{ color: 'rgb(var(--color-text-muted))' }} />}
-                <TableIcon className="w-4 h-4 text-blue-500" />
+                <TableIcon className="w-4 h-4 text-brand-500" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate" style={{ color: 'rgb(var(--color-text))' }}>
                     {t.schema ? `${t.schema}.` : ''}{name}

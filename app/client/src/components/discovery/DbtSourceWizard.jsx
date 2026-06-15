@@ -271,13 +271,13 @@ export default function DbtSourceWizard() {
                     </div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-purple-600 capitalize">{targetDialect}</div>
+                    <div className="text-2xl font-bold text-brand-600 capitalize">{targetDialect}</div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>
                       Target Dialect
                     </div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-blue-600 truncate">
+                    <div className="text-2xl font-bold text-brand-600 truncate">
                       {parseResult.projectName}
                     </div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>

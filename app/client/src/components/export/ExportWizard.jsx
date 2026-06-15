@@ -208,7 +208,7 @@ export default function ExportWizard() {
                 job.status === 'exported'
                   ? 'bg-brand-500/10 text-brand-600'
                   : job.status === 'generated'
-                    ? 'bg-blue-500/10 text-blue-600'
+                    ? 'bg-[rgb(var(--color-surface-alt))] text-[rgb(var(--color-text-secondary))]'
                     : 'bg-gray-400/10 text-gray-500'
               }`}>
                 {job.status}

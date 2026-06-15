@@ -281,11 +281,11 @@ export default function DatabaseSourceWizard() {
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Tables Selected</div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-blue-600 capitalize">{dbConfig.dialect}</div>
+                    <div className="text-2xl font-bold text-brand-600 capitalize">{dbConfig.dialect}</div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Source Dialect</div>
                   </div>
                   <div className="p-4 rounded-xl" style={{ background: 'rgb(var(--color-surface-alt))' }}>
-                    <div className="text-2xl font-bold text-purple-600 uppercase">{outputType}</div>
+                    <div className="text-2xl font-bold text-brand-600 uppercase">{outputType}</div>
                     <div className="text-xs" style={{ color: 'rgb(var(--color-text-secondary))' }}>Output</div>
                   </div>
                 </div>

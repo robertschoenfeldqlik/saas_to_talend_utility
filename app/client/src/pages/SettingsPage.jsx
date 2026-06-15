@@ -285,8 +285,8 @@ export default function SettingsPage() {
       {/* Java Engine */}
       <section className="card p-6 mb-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-            <Server className="w-5 h-5 text-purple-500" />
+          <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+            <Server className="w-5 h-5 text-brand-500" />
           </div>
           <div>
             <h2 className="text-base font-semibold" style={{ color: 'rgb(var(--color-text))' }}>
@@ -326,8 +326,8 @@ export default function SettingsPage() {
       {/* AI Provider */}
       <section className="card p-6 mb-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-            <Brain className="w-5 h-5 text-blue-500" />
+          <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+            <Brain className="w-5 h-5 text-brand-500" />
           </div>
           <div>
             <h2 className="text-base font-semibold" style={{ color: 'rgb(var(--color-text))' }}>
@@ -663,7 +663,7 @@ export default function SettingsPage() {
             }`}
             style={{ background: theme === 'light' ? undefined : 'rgb(var(--color-surface-alt))' }}
           >
-            <Sun className="w-6 h-6 mx-auto mb-2" style={{ color: theme === 'light' ? '#009845' : 'rgb(var(--color-text-muted))' }} />
+            <Sun className="w-6 h-6 mx-auto mb-2" style={{ color: theme === 'light' ? '#13853f' : 'rgb(var(--color-text-muted))' }} />
             <div className="text-sm font-medium text-center" style={{ color: 'rgb(var(--color-text))' }}>Light</div>
           </button>
           <button
@@ -673,7 +673,7 @@ export default function SettingsPage() {
             }`}
             style={{ background: theme === 'dark' ? undefined : 'rgb(var(--color-surface-alt))' }}
           >
-            <Moon className="w-6 h-6 mx-auto mb-2" style={{ color: theme === 'dark' ? '#009845' : 'rgb(var(--color-text-muted))' }} />
+            <Moon className="w-6 h-6 mx-auto mb-2" style={{ color: theme === 'dark' ? '#13853f' : 'rgb(var(--color-text-muted))' }} />
             <div className="text-sm font-medium text-center" style={{ color: 'rgb(var(--color-text))' }}>Dark</div>
           </button>
         </div>

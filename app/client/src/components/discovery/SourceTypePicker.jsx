@@ -21,8 +21,8 @@ export default function SourceTypePicker({ onSelect }) {
         onClick={() => onSelect('database')}
         className="card-interactive p-8 flex flex-col items-center text-center gap-4 transition-all"
       >
-        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-          <Database className="w-8 h-8 text-blue-500" />
+        <div className="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center">
+          <Database className="w-8 h-8 text-brand-500" />
         </div>
         <div>
           <h3 className="text-lg font-semibold mb-1" style={{ color: 'rgb(var(--color-text))' }}>Database Source</h3>
@@ -35,8 +35,8 @@ export default function SourceTypePicker({ onSelect }) {
         onClick={() => onSelect('dbt')}
         className="card-interactive p-8 flex flex-col items-center text-center gap-4 transition-all"
       >
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-          <FileCode className="w-8 h-8 text-purple-500" />
+        <div className="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center">
+          <FileCode className="w-8 h-8 text-brand-500" />
         </div>
         <div>
           <h3 className="text-lg font-semibold mb-1" style={{ color: 'rgb(var(--color-text))' }}>dbt Project</h3>
