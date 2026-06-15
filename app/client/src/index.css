@@ -176,3 +176,55 @@
   background-image: radial-gradient(circle at 1px 1px, rgb(var(--color-border) / 0.3) 1px, transparent 0);
   background-size: 24px 24px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Direction C — "Editorial Flow": warm paper, ink, single green accent.
+   Used by the app shell (Sidebar/Layout) and the Dashboard.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --paper: #f3efe5;  --paper-2: #ece6d8;  --card-ed: #fbf9f3;  --ink: #16150f;
+  --ink-2: #5c5848;  --ink-3: #8b8675;
+  --line: #ddd6c5;   --line-2: #cfc7b2;
+  --green: #13853f;  --green-700: #0c5e2c;  --green-300: #7cc28f;  --green-pale: #e4f0e2;
+  --coral: #e0623a;
+}
+
+.ed-display { font-family: 'Bricolage Grotesque', 'Space Grotesk', sans-serif; }
+.ed-ui      { font-family: 'Space Grotesk', system-ui, sans-serif; }
+.ed-mono    { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+.ed-root    { background: var(--paper); color: var(--ink); font-family: 'Space Grotesk', system-ui, sans-serif; }
+
+/* Editorial buttons */
+.ed-btn       { border: 1.5px solid var(--ink); border-radius: 30px; padding: 11px 20px;
+                font: 600 13.5px 'Space Grotesk', sans-serif; display: inline-flex; gap: 8px;
+                align-items: center; color: var(--ink); background: transparent; transition: all .16s ease; cursor: pointer; }
+.ed-btn:hover { background: var(--ink); color: var(--paper); }
+.ed-btn-primary       { background: var(--ink); color: var(--paper); }
+.ed-btn-primary:hover { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* Quick-action "press" hover */
+.ed-qcard { transition: transform .16s ease, background .16s ease, box-shadow .16s ease, color .16s ease; }
+.ed-qcard:hover { background: var(--ink); color: var(--paper); transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--green); }
+.ed-qcard:hover .ed-qi    { background: var(--green); }
+.ed-qcard:hover .ed-qi svg{ color: #fff; }
+.ed-qcard:hover .ed-ar    { transform: translateX(4px); }
+.ed-qcard:hover .ed-qx    { color: #c8c4b4; }
+.ed-ar { transition: transform .16s ease; }
+
+/* Editorial recent-projects rows */
+.ed-row:hover { background: var(--card-ed); }
+
+@keyframes ed-blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+.ed-blink { animation: ed-blink 1.1s ease-in-out infinite; }
+
+/* Sidebar nav + footer (on dark ink) */
+.ed-navitem { color: #a9a596; transition: all .15s ease; }
+.ed-navitem:hover { background: #211f17; color: #fff; }
+.ed-navitem.active, .ed-navitem.active:hover { background: var(--green); color: #fff; }
+.ed-footbtn { color: #a9a596; transition: all .15s ease; }
+.ed-footbtn:hover { background: #211f17; color: #fff; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ed-rise { animation: ed-rise .55s ease-out both; }
+  @keyframes ed-rise { from { transform: translateY(10px); } to { transform: translateY(0); } }
+}
