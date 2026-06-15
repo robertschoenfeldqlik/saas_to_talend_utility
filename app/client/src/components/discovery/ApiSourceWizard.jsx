@@ -9,6 +9,8 @@ import {
   Loader2,
   Zap,
   Check,
+  AlertTriangle,
+  ShieldCheck,
 } from 'lucide-react';
 import TemplateSelector from './TemplateSelector';
 import EndpointList from './EndpointList';
@@ -46,6 +48,8 @@ export default function ApiSourceWizard() {
   const [generating, setGenerating] = useState(false);
   const [generatedJobs, setGeneratedJobs] = useState(null);
   const [error, setError] = useState(null);
+  // Provenance of the current discovery: deterministic (exact, no AI) vs AI-extracted.
+  const [discovery, setDiscovery] = useState(null);
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
@@ -84,15 +88,22 @@ export default function ApiSourceWizard() {
   const handleDiscover = async () => {
     setDiscovering(true);
     setError(null);
+    setDiscovery(null);
 
     // Resolve the spec content: either pasted directly, or fetched from URL
     let specText = specContent;
     let fetchedIsSpec = false;
+    let det = null;
     if (!specText && apiUrl) {
       try {
         const fetched = await fetchUrl(apiUrl);
         specText = fetched.content;
         fetchedIsSpec = !!fetched.isSpec;
+        det = {
+          kind: fetched.detection?.kind,
+          resolvedSpecUrl: fetched.resolvedSpecUrl,
+          renderedByHeadless: fetched.renderedByHeadless,
+        };
       } catch (fetchErr) {
         // The server now returns structured { error, hint, code } for the
         // common failure modes (DNS, refused, timeout, cert, HTTP n). Show
@@ -124,6 +135,7 @@ export default function ApiSourceWizard() {
         }
         setEndpoints(eps);
         setSelectedEndpoints(new Set(eps.map((_, i) => i)));
+        setDiscovery({ exact: true, source: 'OpenAPI/Swagger spec', detection: det });
         setStep(1);
         setDiscovering(false);
         return;
@@ -180,6 +192,14 @@ export default function ApiSourceWizard() {
         }
         setEndpoints(eps);
         setSelectedEndpoints(new Set(eps.map((_, i) => i)));
+        const prov = aiResult.metadata?.provider;
+        setDiscovery({
+          exact: prov === 'deterministic',
+          source: prov === 'deterministic' ? 'OData $metadata' : `AI extraction (${aiResult.metadata?.model || prov || 'model'})`,
+          provider: prov,
+          dropped: aiResult.metadata?.droppedUngrounded ?? 0,
+          detection: det,
+        });
         setStep(1);
         return;
       }
@@ -385,6 +405,30 @@ export default function ApiSourceWizard() {
       {/* Step 2: Endpoints */}
       {step === 1 && (
         <div className="space-y-6">
+          {discovery && (
+            <div className="rounded-xl border p-4 flex items-start gap-3"
+                 style={discovery.exact
+                   ? { background: 'rgb(34 197 94 / 0.08)', borderColor: 'rgb(34 197 94 / 0.3)' }
+                   : { background: 'rgb(245 158 11 / 0.08)', borderColor: 'rgb(245 158 11 / 0.3)' }}>
+              {discovery.exact
+                ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'rgb(22 163 74)' }} />
+                : <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'rgb(217 119 6)' }} />}
+              <div className="text-sm flex-1" style={{ color: 'rgb(var(--color-text))' }}>
+                <div className="font-semibold">
+                  {discovery.exact
+                    ? `Exact — parsed deterministically from ${discovery.source}`
+                    : 'AI-extracted from docs — review before generating'}
+                </div>
+                <div className="text-xs mt-1 leading-relaxed" style={{ color: 'rgb(var(--color-text-secondary))' }}>
+                  {discovery.exact
+                    ? 'Straight from the spec/metadata — no AI involved, so no hallucinated endpoints.'
+                    : `Extracted by ${discovery.source}.${discovery.dropped > 0 ? ` ${discovery.dropped} unverifiable endpoint(s) were dropped.` : ''} Probe them below to confirm they're real.`}
+                  {discovery.detection?.renderedByHeadless && ' The page was JavaScript-rendered with a headless browser.'}
+                  {discovery.detection?.resolvedSpecUrl && ` Spec resolved from ${discovery.detection.resolvedSpecUrl}.`}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold" style={{ color: 'rgb(var(--color-text))' }}>
@@ -421,6 +465,16 @@ export default function ApiSourceWizard() {
             </div>
           </div>
 
+          {discovery && !discovery.exact && (
+            <div className="rounded-xl border p-4 flex items-start gap-3"
+                 style={{ background: 'rgb(245 158 11 / 0.08)', borderColor: 'rgb(245 158 11 / 0.3)' }}>
+              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'rgb(217 119 6)' }} />
+              <div className="text-sm" style={{ color: 'rgb(var(--color-text))' }}>
+                <span className="font-semibold">Verify before generating.</span> These endpoints were AI-extracted —
+                run the probe below to confirm each returns data (a 404 means it isn't real). Set the API URL and auth first.
+              </div>
+            </div>
+          )}
           {/* Optional probe step: hit each selected endpoint once with the
               configured auth to capture a baseline fixture + verify the API
               answers. Skippable — generation works without probing. */}
