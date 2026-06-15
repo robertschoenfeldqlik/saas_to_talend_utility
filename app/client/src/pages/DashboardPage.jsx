@@ -134,7 +134,7 @@ export default function DashboardPage() {
           <div key={f.label} style={{ padding: '30px 44px', borderRight: i < 3 ? '1px solid var(--line-2)' : 'none' }}>
             <div className="ed-mono text-[11px] uppercase mb-3" style={{ color: 'var(--ink-3)', letterSpacing: '.12em' }}>{f.label}</div>
             {f.engine ? (
-              <div className="ed-display flex items-center gap-2.5" style={{ fontWeight: 700, fontSize: 46, letterSpacing: '-0.02em', color: engineUp ? 'var(--green-700)' : 'var(--coral)' }}>
+              <div className="ed-display flex items-center gap-2.5" style={{ fontWeight: 700, fontSize: 46, letterSpacing: '-0.02em', color: engineUp ? 'var(--green)' : 'var(--coral)' }}>
                 <span style={{ width: 14, height: 14, borderRadius: '50%', background: engineUp ? 'var(--green)' : 'var(--coral)', boxShadow: engineUp ? '0 0 0 4px var(--green-pale)' : 'none' }} />
                 {engineUp ? 'Online' : 'Offline'}
               </div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Quick actions ── */}
-      <div style={{ padding: '34px 44px', ...rule }}>
+      <div style={{ padding: '34px 44px' }}>
         <h2 className="ed-display mb-5" style={{ fontWeight: 700, fontSize: 26, letterSpacing: '-0.02em' }}>Quick actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
@@ -164,7 +164,7 @@ export default function DashboardPage() {
               className="ed-qcard text-left"
               style={{ background: 'var(--card-ed)', border: '1.5px solid var(--ink)', borderRadius: 18, padding: 24 }}
             >
-              <div className="ed-mono text-[12px] mb-4" style={{ color: 'var(--green)', letterSpacing: '.1em' }}>{n}</div>
+              <div className="ed-qnum ed-mono text-[12px] mb-4" style={{ color: 'var(--green)', letterSpacing: '.1em' }}>{n}</div>
               <div className="ed-qi flex items-center justify-center mb-4" style={{ width: 48, height: 48, borderRadius: 13, background: 'var(--green-pale)', transition: 'background .16s ease' }}>
                 <Icon className="w-5 h-5" style={{ color: 'var(--green-700)' }} />
               </div>
@@ -180,7 +180,14 @@ export default function DashboardPage() {
 
       {/* ── Recent projects ── */}
       <div style={{ padding: '34px 44px 48px' }}>
-        <h2 className="ed-display mb-5" style={{ fontWeight: 700, fontSize: 26, letterSpacing: '-0.02em' }}>Recent projects</h2>
+        <div className="flex items-end justify-between mb-5">
+          <h2 className="ed-display" style={{ fontWeight: 700, fontSize: 26, letterSpacing: '-0.02em' }}>Recent projects</h2>
+          {recentProjects.length > 0 && (
+            <button onClick={() => navigate('/jobs')} className="ed-mono text-[12px] inline-flex items-center gap-1.5" style={{ color: 'var(--ink-2)', borderBottom: '1.5px solid var(--ink)', paddingBottom: 3 }}>
+              View all <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {recentProjects.length === 0 ? (
           <div className="text-center" style={{ border: '1.5px dashed var(--line-2)', borderRadius: 18, padding: '56px 24px' }}>

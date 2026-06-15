@@ -223,6 +223,34 @@
 .ed-navitem.active, .ed-navitem.active:hover { background: var(--green); color: #fff; }
 .ed-footbtn { color: #a9a596; transition: all .15s ease; }
 .ed-footbtn:hover { background: #211f17; color: #fff; }
+.ed-qcard:hover .ed-qnum { color: var(--green-300); }
+
+/* Roll Direction C across every page: remap the shared --color-* tokens to the
+   editorial palette inside the app shell, so existing pages (Jobs, Discover,
+   Export, Settings, Help) adopt paper / ink / green without per-page rewrites. */
+.ed-root {
+  --color-bg: 243 239 229;          /* paper */
+  --color-surface: 251 249 243;     /* card */
+  --color-surface-alt: 236 230 216; /* paper-2 */
+  --color-surface-hover: 221 214 197;
+  --color-text: 22 21 15;           /* ink */
+  --color-text-secondary: 92 88 72; /* ink-2 */
+  --color-text-muted: 139 134 117;  /* ink-3 */
+  --color-border: 207 199 178;      /* line-2 */
+  --color-border-light: 221 214 197;
+  --brand-500: 19 133 63;           /* green */
+  --brand-600: 12 94 44;            /* green-700 */
+  --brand-700: 12 94 44;
+}
+.ed-root .page-header { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; letter-spacing: -.02em; }
+.ed-root .card { box-shadow: none; border-width: 1.5px; border-radius: 18px; border-color: var(--line-2); }
+.ed-root .card-interactive:hover { box-shadow: 4px 4px 0 var(--green-pale); transform: translate(-1px, -1px); border-color: var(--ink); }
+.ed-root .btn-primary, .ed-root .btn-secondary, .ed-root .btn-ghost { border-radius: 30px; }
+.ed-root .btn-primary { background: var(--ink); color: var(--paper); }
+.ed-root .btn-primary:hover { background: var(--green); }
+.ed-root .btn-secondary { border: 1.5px solid var(--ink); }
+.ed-root .btn-secondary:hover { background: var(--ink); color: var(--paper); }
+.ed-root .input { border-radius: 12px; border-width: 1.5px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .ed-rise { animation: ed-rise .55s ease-out both; }
