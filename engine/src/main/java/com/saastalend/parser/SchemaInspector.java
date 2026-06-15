@@ -37,9 +37,12 @@ public final class SchemaInspector {
         }
 
         Schema<?> resolved = resolveSchema(responseSchema, spec);
+        if (resolved == null) {
+            return "$[*]";
+        }
 
         // If the response itself is an array, records are at root
-        if (resolved instanceof ArraySchema || "array".equals(resolved.getType())) {
+        if (isArrayType(resolved)) {
             return "$[*]";
         }
 
@@ -53,7 +56,7 @@ public final class SchemaInspector {
             if (properties.containsKey(wrapper)) {
                 Schema<?> prop = properties.get(wrapper);
                 Schema<?> resolvedProp = resolveSchema(prop, spec);
-                if (resolvedProp instanceof ArraySchema || "array".equals(resolvedProp.getType())) {
+                if (isArrayType(resolvedProp)) {
                     return "$." + wrapper + "[*]";
                 }
             }
@@ -64,7 +67,7 @@ public final class SchemaInspector {
         int arrayCount = 0;
         for (Map.Entry<String, Schema> entry : properties.entrySet()) {
             Schema<?> prop = resolveSchema(entry.getValue(), spec);
-            if (prop instanceof ArraySchema || "array".equals(prop.getType())) {
+            if (isArrayType(prop)) {
                 singleArrayProp = entry.getKey();
                 arrayCount++;
             }
@@ -94,7 +97,7 @@ public final class SchemaInspector {
         if (resolved == null) {
             return true;
         }
-        if (resolved instanceof ArraySchema || "array".equals(resolved.getType())) {
+        if (isArrayType(resolved)) {
             return true;
         }
         Map<String, Schema> properties = resolved.getProperties();
@@ -102,13 +105,26 @@ public final class SchemaInspector {
             return true; // opaque object (e.g. a map) — don't over-filter
         }
         for (Schema<?> prop : properties.values()) {
-            Schema<?> resolvedProp = resolveSchema(prop, spec);
-            if (resolvedProp instanceof ArraySchema
-                    || (resolvedProp != null && "array".equals(resolvedProp.getType()))) {
+            if (isArrayType(resolveSchema(prop, spec))) {
                 return true;
             }
         }
         return false; // object with defined scalar/ref properties, no array → single record
+    }
+
+    /**
+     * Recognises an array schema across OpenAPI 3.0 (single `type` string) and
+     * 3.1 (`type` as a set, exposed via getTypes()). swagger-parser leaves
+     * getType() null for 3.1 schemas, so a plain "array".equals(getType()) misses
+     * every array in a 3.1 spec (e.g. OpenAI's {object, data:[...]} envelopes).
+     */
+    @SuppressWarnings("rawtypes")
+    private static boolean isArrayType(Schema<?> s) {
+        if (s == null) return false;
+        if (s instanceof ArraySchema) return true;
+        if ("array".equals(s.getType())) return true;
+        java.util.Set<String> types = s.getTypes();
+        return types != null && types.contains("array");
     }
 
     /**

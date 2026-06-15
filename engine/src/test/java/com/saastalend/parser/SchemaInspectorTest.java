@@ -51,4 +51,19 @@ class SchemaInspectorTest {
         assertTrue(SchemaInspector.isCollectionResponse(null, spec));
         assertTrue(SchemaInspector.isCollectionResponse(new ObjectSchema(), spec)); // no properties
     }
+
+    @Test
+    void recognizesOpenApi31ArrayViaTypesSet() {
+        // OpenAPI 3.1: schema type is a Set (getTypes()), and getType() is null —
+        // as in OpenAI's {object, data:[...]} list envelopes.
+        Schema<Object> dataArr = new Schema<>();
+        dataArr.setTypes(new java.util.HashSet<>(java.util.Arrays.asList("array")));
+        dataArr.setItems(new ObjectSchema());
+        Map<String, Schema> props = new HashMap<>();
+        props.put("object", new StringSchema());
+        props.put("data", dataArr);
+        ObjectSchema envelope = new ObjectSchema();
+        envelope.setProperties(props);
+        assertTrue(SchemaInspector.isCollectionResponse(envelope, spec));
+    }
 }

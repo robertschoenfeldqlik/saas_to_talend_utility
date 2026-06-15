@@ -132,8 +132,11 @@ public class OpenApiParserService {
             String ref = m.group(1);
             if (isExternalRef(ref)) {
                 throw new IllegalArgumentException(
-                        "External $ref is not allowed in the spec: \"" + ref
-                        + "\". Inline the referenced definition and retry.");
+                        "This spec uses an external / multi-file $ref (\"" + ref
+                        + "\"), which isn't supported (resolving it would fetch other files and"
+                        + " is a security risk for untrusted specs). Bundle the spec into a single"
+                        + " self-contained file first — e.g. `npx @redocly/cli bundle spec.yaml -o"
+                        + " bundled.json` or `swagger-cli bundle` — then retry with that file.");
             }
         }
     }
