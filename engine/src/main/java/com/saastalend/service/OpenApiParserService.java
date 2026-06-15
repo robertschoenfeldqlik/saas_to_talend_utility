@@ -4,6 +4,7 @@ import com.saastalend.model.AuthConfig;
 import com.saastalend.model.DiscoveredEndpoint;
 import com.saastalend.parser.AuthDetector;
 import com.saastalend.parser.OpenApiV3Parser;
+import com.saastalend.parser.RawSpecView;
 import com.saastalend.parser.SwaggerV2Parser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -102,6 +103,20 @@ public class OpenApiParserService {
             OpenApiV3Parser v3Parser = new OpenApiV3Parser();
             endpoints = v3Parser.parse(openAPI);
         }
+
+        // Drop endpoints that swagger-parser classified as collections only because
+        // resolveFully coerced a typeless-`items` schema into an array (e.g. Slack's
+        // objs_user → a bogus "$.user[*]" on the single-record /users.info lookup).
+        // The raw document keeps the signal resolveFully erases; see RawSpecView.
+        RawSpecView rawView = new RawSpecView(specContent);
+        endpoints.removeIf(e -> {
+            if (rawView.isMistypedSingleRecord(e.getPath(), e.getRecordsPath())) {
+                warnings.add("Skipped " + e.getPath()
+                        + " — its response is a single record the spec mis-typed as an array.");
+                return true;
+            }
+            return false;
+        });
 
         if (endpoints.isEmpty()) {
             warnings.add("No GET list endpoints discovered. The spec may contain only detail or mutation endpoints.");

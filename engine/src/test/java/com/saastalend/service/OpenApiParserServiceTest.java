@@ -69,6 +69,33 @@ class OpenApiParserServiceTest {
     }
 
     @Test
+    void dropsSingleRecordMistypedAsArrayButKeepsRealList() {
+        // Slack's pathology: objs_user is a bare {"items": {"anyOf": [...]}} with no type,
+        // so swagger-parser coerces it to an array. The single-record lookup /users.info
+        // (body {ok, user}) must be dropped, while the genuine list /users.list (members:
+        // {type: array, items: ...}) is kept.
+        String spec = "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"S\",\"version\":\"1\"},"
+                + "\"paths\":{"
+                + "\"/users.info\":{\"get\":{\"responses\":{\"200\":{\"content\":{\"application/json\":"
+                + "{\"schema\":{\"type\":\"object\",\"properties\":{\"ok\":{\"type\":\"boolean\"},"
+                + "\"user\":{\"$ref\":\"#/components/schemas/objs_user\"}}}}}}}}},"
+                + "\"/users.list\":{\"get\":{\"responses\":{\"200\":{\"content\":{\"application/json\":"
+                + "{\"schema\":{\"type\":\"object\",\"properties\":{\"ok\":{\"type\":\"boolean\"},"
+                + "\"members\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/components/schemas/objs_user\"}}}}}}}}}}"
+                + "},"
+                + "\"components\":{\"schemas\":{"
+                + "\"objs_user\":{\"items\":{\"anyOf\":[{\"type\":\"string\"},"
+                + "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"}}}]}}"
+                + "}}}";
+        OpenApiParserService.DiscoveryResult r = new OpenApiParserService().parseSpec(spec);
+        java.util.List<String> paths = r.getEndpoints().stream()
+                .map(com.saastalend.model.DiscoveredEndpoint::getPath)
+                .toList();
+        assertTrue(paths.contains("/users.list"), "a genuine list (type: array) must be kept");
+        assertFalse(paths.contains("/users.info"), "a single record mis-typed as an array must be dropped");
+    }
+
+    @Test
     void allowsYamlFoldedScalarFalseMatch() {
         // A loose regex matches "$ref: >-" (a YAML folded scalar, as in the OpenAI
         // spec); it is not a real external ref and must not be rejected.
