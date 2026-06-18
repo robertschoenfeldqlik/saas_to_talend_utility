@@ -460,7 +460,11 @@ public class TalendXmlWriterService {
                         colEl.addAttribute("key", String.valueOf(col.isKey()));
                         colEl.addAttribute("name", col.getName());
                         colEl.addAttribute("nullable", String.valueOf(col.isNullable()));
-                        colEl.addAttribute("talendType",
+                        // Talend's schema column attribute is "type" (read by
+                        // Studio on import). Emitting "talendType" left the real
+                        // "type" null, which NPE'd on import ("typevalue is
+                        // null" in String.equals on the column type).
+                        colEl.addAttribute("type",
                                 col.getTalendType() != null ? col.getTalendType() : "id_String");
                         if (col.getLength() > 0) {
                             colEl.addAttribute("length", String.valueOf(col.getLength()));

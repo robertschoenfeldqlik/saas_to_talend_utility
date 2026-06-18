@@ -23,8 +23,10 @@ public class TalendJobGeneratorService {
         List<TalendNode> nodes = new ArrayList<>();
         List<TalendConnection> connections = new ArrayList<>();
 
-        // Pipeline matches real Talend Studio 8.0.1 output:
-        //   HTTPClient → tExtractJSONFields → tLogRow + tFileOutputJSON
+        // Pipeline (linear — a Talend component allows only ONE main FLOW output;
+        // tLogRow is a pass-through, so the file output hangs off it, not off a
+        // second output of tExtractJSONFields):
+        //   HTTPClient → tExtractJSONFields → tLogRow → tFileOutputJSON
         // HTTPClient emits a FLOW connector named "row1" carrying a "body" id_String column.
 
         // Node 1: HTTPClient — calls the API (uses context.API_BASE_URL + path)
@@ -54,13 +56,15 @@ public class TalendJobGeneratorService {
         connections.add(ConnectionGenerator.generate(
                 httpClientName, extractJsonName, "FLOW", "row1"));
 
-        // tExtractJSONFields → tLogRow (FLOW row2)
+        // tExtractJSONFields → tLogRow (FLOW row2) — single main output
         connections.add(ConnectionGenerator.generate(
                 extractJsonName, logRowName, "FLOW", "row2"));
 
-        // tExtractJSONFields → tFileOutputJSON (FLOW row3)
+        // tLogRow → tFileOutputJSON (FLOW row3). The file output hangs off the
+        // pass-through tLogRow, NOT off a second output of tExtractJSONFields,
+        // which would be invalid ("too much row output").
         connections.add(ConnectionGenerator.generate(
-                extractJsonName, fileOutputName, "FLOW", "row3"));
+                logRowName, fileOutputName, "FLOW", "row3"));
 
         return TalendJob.builder()
                 .id(jobId)
