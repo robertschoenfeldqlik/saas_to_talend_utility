@@ -78,23 +78,8 @@ public final class TExtractJSONFieldsGenerator {
         mapping.setTableEntries(rows);
         params.add(mapping);
 
-        // ── Metadata: FLOW connector named row1 (real Talend default name) ──
-        List<TalendMetadataColumn> columns = new ArrayList<>();
-        if (endpoint.getResponseFields() != null && !endpoint.getResponseFields().isEmpty()) {
-            for (FieldInfo field : endpoint.getResponseFields()) {
-                columns.add(TalendMetadataColumn.builder()
-                        .name(sanitizeColumnName(field.getName()))
-                        .talendType(field.getType() != null ? field.getType() : "id_String")
-                        .key(endpoint.getPrimaryKeys() != null
-                                && endpoint.getPrimaryKeys().contains(field.getName()))
-                        .nullable(true)
-                        .comment(field.getDescription())
-                        .build());
-            }
-        } else {
-            columns.add(TalendMetadataColumn.builder()
-                    .name("body").talendType("id_String").nullable(true).build());
-        }
+        // ── Metadata: FLOW schema (shared so tLogRow + tFileOutputJSON match) ──
+        List<TalendMetadataColumn> columns = buildColumns(endpoint);
 
         TalendMetadata metadata = TalendMetadata.builder()
                 .name("row1")
@@ -111,6 +96,33 @@ public final class TExtractJSONFieldsGenerator {
                 .parameters(params)
                 .metadata(List.of(metadata))
                 .build();
+    }
+
+    /**
+     * Builds the FLOW schema columns from a discovered endpoint's response
+     * fields. Shared with tLogRow and tFileOutputJSON so EVERY component on the
+     * records flow carries an identical schema — Talend flags a mismatch between
+     * connected components otherwise.
+     */
+    public static List<TalendMetadataColumn> buildColumns(DiscoveredEndpoint endpoint) {
+        List<TalendMetadataColumn> columns = new ArrayList<>();
+        if (endpoint != null && endpoint.getResponseFields() != null
+                && !endpoint.getResponseFields().isEmpty()) {
+            for (FieldInfo field : endpoint.getResponseFields()) {
+                columns.add(TalendMetadataColumn.builder()
+                        .name(sanitizeColumnName(field.getName()))
+                        .talendType(field.getType() != null ? field.getType() : "id_String")
+                        .key(endpoint.getPrimaryKeys() != null
+                                && endpoint.getPrimaryKeys().contains(field.getName()))
+                        .nullable(true)
+                        .comment(field.getDescription())
+                        .build());
+            }
+        } else {
+            columns.add(TalendMetadataColumn.builder()
+                    .name("body").talendType("id_String").nullable(true).build());
+        }
+        return columns;
     }
 
     private static String sanitizeColumnName(String name) {

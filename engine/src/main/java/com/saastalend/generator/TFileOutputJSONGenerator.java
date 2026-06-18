@@ -1,11 +1,11 @@
 package com.saastalend.generator;
 
+import com.saastalend.model.DiscoveredEndpoint;
 import com.saastalend.model.TalendElementParameter;
 import com.saastalend.model.TalendMetadata;
 import com.saastalend.model.TalendMetadataColumn;
 import com.saastalend.model.TalendNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class TFileOutputJSONGenerator {
@@ -14,10 +14,17 @@ public final class TFileOutputJSONGenerator {
     }
 
     /**
-     * Generates a tFileOutputJSON TalendNode for writing output to a JSON file.
+     * Generates a tFileOutputJSON TalendNode carrying the SAME FLOW schema as the
+     * upstream components, so the records actually written match the extracted
+     * fields (and Talend doesn't flag a schema mismatch on import).
      */
+    /** Overload for callers without a discovered endpoint (e.g. the DB path). */
     public static TalendNode generate(String outputPath, int posX, int posY) {
-        List<TalendElementParameter> params = new ArrayList<>();
+        return generate(null, outputPath, posX, posY);
+    }
+
+    public static TalendNode generate(DiscoveredEndpoint endpoint, String outputPath, int posX, int posY) {
+        List<TalendElementParameter> params = new java.util.ArrayList<>();
 
         params.add(param("TEXT", "UNIQUE_NAME", "tFileOutputJSON_1"));
         params.add(param("TEXT", "FILENAME", outputPath != null ? outputPath : "\"output.json\""));
@@ -25,13 +32,8 @@ public final class TFileOutputJSONGenerator {
         params.add(param("CHECK", "CREATE_DIR", "true"));
         params.add(param("CHECK", "APPEND_FILE", "false"));
 
-        // Metadata with a generic schema (will be overridden by connection flow)
-        List<TalendMetadataColumn> columns = new ArrayList<>();
-        columns.add(TalendMetadataColumn.builder()
-                .name("record")
-                .talendType("id_String")
-                .nullable(true)
-                .build());
+        // Same schema as the extract output — the file gets the real fields.
+        List<TalendMetadataColumn> columns = TExtractJSONFieldsGenerator.buildColumns(endpoint);
 
         TalendMetadata metadata = TalendMetadata.builder()
                 .name("tFileOutputJSON_1")

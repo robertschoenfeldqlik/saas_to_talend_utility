@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,5 +49,40 @@ class TalendJobGeneratorServiceTest {
 
         // Linear pipeline: HTTPClient → extract → tLogRow → tFileOutputJSON
         assertEquals(3, job.getConnections().size());
+    }
+
+    @Test
+    void extractLogRowAndFileOutputShareIdenticalSchema() {
+        DiscoveredEndpoint ep = DiscoveredEndpoint.builder()
+                .name("latest_rates").path("/v1/latest").method("GET")
+                .recordsPath("$").primaryKeys(List.of("date"))
+                .responseFields(List.of(
+                        FieldInfo.builder().name("amount").type("id_Double").build(),
+                        FieldInfo.builder().name("base").type("id_String").build(),
+                        FieldInfo.builder().name("date").type("id_Date").build()))
+                .selected(true).build();
+
+        TalendJob job = new TalendJobGeneratorService().generateJob(
+                ep, AuthConfig.builder().type(AuthConfig.AuthType.NO_AUTH).build(),
+                "https://api.frankfurter.dev", "JSON");
+
+        List<String> extract = flowColumns(job, "tExtractJSONFields");
+        List<String> logRow = flowColumns(job, "tLogRow");
+        List<String> fileOut = flowColumns(job, "tFileOutputJSON");
+
+        assertEquals(extract, logRow, "tLogRow schema must match tExtractJSONFields");
+        assertEquals(extract, fileOut, "tFileOutputJSON schema must match tExtractJSONFields");
+        assertTrue(extract.size() >= 3, "schema should carry the real response fields");
+    }
+
+    /** name:type of every FLOW column on the named component. */
+    private static List<String> flowColumns(TalendJob job, String componentName) {
+        return job.getNodes().stream()
+                .filter(n -> componentName.equals(n.getComponentName()))
+                .flatMap(n -> n.getMetadata().stream())
+                .filter(m -> "FLOW".equals(m.getConnectorName()))
+                .flatMap(m -> m.getColumns().stream())
+                .map(c -> c.getName() + ":" + c.getTalendType())
+                .collect(Collectors.toList());
     }
 }

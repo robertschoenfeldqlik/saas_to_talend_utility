@@ -1,6 +1,8 @@
 package com.saastalend.service;
 
 import com.saastalend.generator.TFileOutputJSONGenerator;
+import com.saastalend.model.DiscoveredEndpoint;
+import com.saastalend.model.FieldInfo;
 import com.saastalend.model.TalendJob;
 import com.saastalend.model.TalendNode;
 import org.junit.jupiter.api.Test;
@@ -20,7 +22,10 @@ class TalendXmlWriterServiceTest {
 
     @Test
     void schemaColumnCarriesTypeAttribute() {
-        TalendNode out = TFileOutputJSONGenerator.generate("\"output.json\"", 100, 100);
+        DiscoveredEndpoint ep = DiscoveredEndpoint.builder()
+                .responseFields(List.of(FieldInfo.builder().name("id").type("id_String").build()))
+                .build();
+        TalendNode out = TFileOutputJSONGenerator.generate(ep, "\"output.json\"", 100, 100);
         TalendJob job = TalendJob.builder().name("Test").nodes(List.of(out)).build();
 
         String xml = new TalendXmlWriterService().writeItemXml(job);

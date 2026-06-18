@@ -1,5 +1,6 @@
 package com.saastalend.generator;
 
+import com.saastalend.model.DiscoveredEndpoint;
 import com.saastalend.model.TalendElementParameter;
 import com.saastalend.model.TalendMetadata;
 import com.saastalend.model.TalendMetadataColumn;
@@ -14,9 +15,16 @@ public final class TLogRowGenerator {
     }
 
     /**
-     * Generates a simple tLogRow TalendNode for logging row data to the console.
+     * Generates a tLogRow TalendNode (console echo) carrying the SAME FLOW schema
+     * as the upstream tExtractJSONFields, so the schemas stay consistent across
+     * the pipeline.
      */
+    /** Overload for callers without a discovered endpoint (e.g. the DB path). */
     public static TalendNode generate(int posX, int posY) {
+        return generate(null, posX, posY);
+    }
+
+    public static TalendNode generate(DiscoveredEndpoint endpoint, int posX, int posY) {
         List<TalendElementParameter> params = new ArrayList<>();
 
         params.add(param("TEXT", "UNIQUE_NAME", "tLogRow_1"));
@@ -26,13 +34,8 @@ public final class TLogRowGenerator {
         params.add(param("CHECK", "PRINT_UNIQUE_NAME", "false"));
         params.add(param("CHECK", "PRINT_COLNAMES", "true"));
 
-        // Metadata with generic schema
-        List<TalendMetadataColumn> columns = new ArrayList<>();
-        columns.add(TalendMetadataColumn.builder()
-                .name("record")
-                .talendType("id_String")
-                .nullable(true)
-                .build());
+        // Same schema as the extract output — keeps the flow consistent.
+        List<TalendMetadataColumn> columns = TExtractJSONFieldsGenerator.buildColumns(endpoint);
 
         TalendMetadata metadata = TalendMetadata.builder()
                 .name("tLogRow_1")

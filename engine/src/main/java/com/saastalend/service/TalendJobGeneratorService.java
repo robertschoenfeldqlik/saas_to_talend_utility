@@ -37,13 +37,13 @@ public class TalendJobGeneratorService {
         TalendNode extractJson = TExtractJSONFieldsGenerator.generate(endpoint, 350, 100);
         nodes.add(extractJson);
 
-        // Node 3: tLogRow — console debugging output
-        TalendNode logRow = TLogRowGenerator.generate(600, 50);
+        // Node 3: tLogRow — console debugging output (same schema as the extract)
+        TalendNode logRow = TLogRowGenerator.generate(endpoint, 600, 50);
         nodes.add(logRow);
 
         // Node 4: tFileOutputJSON — writes to context.OUTPUT_DIR + filename
         TalendNode fileOutput = TFileOutputJSONGenerator.generate(
-                "context.OUTPUT_DIR + \"/" + jobName + ".json\"", 600, 150);
+                endpoint, "context.OUTPUT_DIR + \"/" + jobName + ".json\"", 600, 150);
         nodes.add(fileOutput);
 
         // Wire connections
