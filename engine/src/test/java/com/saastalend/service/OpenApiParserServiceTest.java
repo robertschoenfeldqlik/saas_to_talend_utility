@@ -96,6 +96,22 @@ class OpenApiParserServiceTest {
     }
 
     @Test
+    void swagger2WithoutDefinitionsDoesNotCrash() {
+        // Regression: a Swagger 2.0 spec with NO definitions block made
+        // swagger-parser NPE inside resolveFully ("this.schemas is null"),
+        // surfacing as a 500. The layered parse fallback must degrade instead.
+        // Both ops are by-id lookups, so the (graceful) result is simply empty.
+        String spec = "{\"swagger\":\"2.0\",\"info\":{\"title\":\"Syriac\",\"version\":\"1\"},"
+                + "\"host\":\"api.example.com\",\"basePath\":\"/\",\"paths\":{"
+                + "\"/lexeme/{id}\":{\"get\":{\"parameters\":[{\"name\":\"id\",\"in\":\"path\","
+                + "\"required\":true,\"type\":\"string\"}],\"responses\":{\"200\":{\"description\":\"ok\","
+                + "\"schema\":{\"type\":\"object\",\"properties\":{\"category\":{\"type\":\"string\"}}}}}}}}}";
+        OpenApiParserService.DiscoveryResult r =
+                assertDoesNotThrow(() -> new OpenApiParserService().parseSpec(spec));
+        assertTrue(r.getEndpoints().isEmpty(), "by-id-only spec yields no list endpoints, gracefully");
+    }
+
+    @Test
     void allowsYamlFoldedScalarFalseMatch() {
         // A loose regex matches "$ref: >-" (a YAML folded scalar, as in the OpenAI
         // spec); it is not a real external ref and must not be rejected.

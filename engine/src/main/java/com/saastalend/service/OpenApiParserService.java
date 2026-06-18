@@ -50,25 +50,19 @@ public class OpenApiParserService {
         // aren't supported here anyway since we parse a single spec string.
         assertNoExternalRefs(specContent);
 
-        ParseOptions options = new ParseOptions();
-        options.setResolve(true);
-        options.setResolveFully(true);
-
         // Swagger 2.0 specs must be routed through the v2->v3 converter
         // explicitly. OpenAPIV3Parser is supposed to auto-detect 2.0 via a
         // ServiceLoader extension, but that lookup doesn't resolve inside the
         // Spring Boot fat jar, so a 2.0 doc would otherwise fail with the
         // misleading "attribute openapi is missing".
         boolean isSwagger2 = looksLikeSwagger2(specContent);
-        SwaggerParseResult parseResult = isSwagger2
-                ? new SwaggerConverter().readContents(specContent, null, options)
-                : new OpenAPIV3Parser().readContents(specContent, null, options);
+        SwaggerParseResult parseResult = parseWithFallback(specContent, isSwagger2, warnings);
 
-        if (parseResult.getMessages() != null) {
+        if (parseResult != null && parseResult.getMessages() != null) {
             warnings.addAll(parseResult.getMessages());
         }
 
-        OpenAPI openAPI = parseResult.getOpenAPI();
+        OpenAPI openAPI = parseResult != null ? parseResult.getOpenAPI() : null;
         if (openAPI == null) {
             throw new IllegalArgumentException(
                     "Failed to parse OpenAPI spec. Errors: " + String.join(", ", warnings));
@@ -129,6 +123,50 @@ public class OpenApiParserService {
                 .endpoints(endpoints)
                 .warnings(warnings)
                 .build();
+    }
+
+    /**
+     * Parse with graceful degradation. The richest mode (resolveFully) inlines
+     * every $ref so the schema inspector sees concrete types — but swagger-parser
+     * throws on some real specs during that step (e.g. a NullPointerException,
+     * "this.schemas is null", on a Swagger 2.0 doc that declares no definitions).
+     * Rather than 500, fall back to progressively less-aggressive resolution so
+     * we still recover the spec's paths and auth. Each attempt is independent;
+     * the SSRF $ref guard already ran before this.
+     */
+    private SwaggerParseResult parseWithFallback(String specContent, boolean isSwagger2, List<String> warnings) {
+        ParseOptions[] modes = {
+                buildOptions(true, true),   // resolve + resolveFully (best fidelity)
+                buildOptions(true, false),  // resolve refs but don't inline
+                buildOptions(false, false), // raw structure only
+        };
+        SwaggerParseResult last = null;
+        for (int i = 0; i < modes.length; i++) {
+            try {
+                SwaggerParseResult r = isSwagger2
+                        ? new SwaggerConverter().readContents(specContent, null, modes[i])
+                        : new OpenAPIV3Parser().readContents(specContent, null, modes[i]);
+                if (r != null && r.getOpenAPI() != null) {
+                    if (i > 0) {
+                        warnings.add("Spec parsed with reduced $ref resolution after the parser "
+                                + "could not fully resolve it; some response schemas may be incomplete.");
+                    }
+                    return r;
+                }
+                last = r;
+            } catch (RuntimeException ex) {
+                // swagger-parser blew up in this mode — try a gentler one.
+                last = null;
+            }
+        }
+        return last;
+    }
+
+    private static ParseOptions buildOptions(boolean resolve, boolean resolveFully) {
+        ParseOptions o = new ParseOptions();
+        o.setResolve(resolve);
+        o.setResolveFully(resolveFully);
+        return o;
     }
 
     private static final java.util.regex.Pattern REF_RE =

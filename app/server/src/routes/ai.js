@@ -8,6 +8,8 @@ const { detectSpec, findEmbeddedSpecUrls, conventionalSpecUrls, findConfigScript
 const { isEdmx, odataVersion, parseEdmxToConfig } = require('../services/odataMetadata');
 const { headlessAvailable, renderPage } = require('../services/headlessRender');
 const { classifyPage } = require('../services/pageClassifier');
+const { redactCredentialShapedValues } = require('../services/redact');
+const { validateAndCoerceConfig } = require('../services/configSchema');
 const dns = require('dns');
 const http = require('http');
 const https = require('https');
@@ -44,6 +46,76 @@ function ssrfSafeLookup(hostname, options, callback) {
 
 const ssrfSafeHttpAgent = new http.Agent({ lookup: ssrfSafeLookup });
 const ssrfSafeHttpsAgent = new https.Agent({ lookup: ssrfSafeLookup });
+
+// ── Transient-error retry for outbound fetches ───────────────────────────────
+// Large/slow spec & docs sites (multi-MB Azure/AWS specs, sluggish portals) are
+// the #1 cause of a spurious "couldn't generate" — the spec never arrived, it
+// wasn't a model problem. Retry transient failures (timeouts, dropped sockets,
+// HTTP 429/5xx) with exponential backoff. The SSRF-safe DNS lookup re-runs on
+// every attempt (the agent is reused), so a host can't pass validation once and
+// then redirect a retry onto the metadata endpoint.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function isTransientError(err) {
+  const code = err && err.code;
+  return code === 'ECONNRESET' || code === 'ETIMEDOUT' || code === 'ECONNABORTED'
+      || code === 'EAI_AGAIN' || code === 'ESOCKETTIMEDOUT'
+      || code === 'ERR_SOCKET_CONNECTION_TIMEOUT';
+}
+
+function isTransientStatus(status) {
+  return status === 429 || (status >= 500 && status <= 599);
+}
+
+async function fetchWithRetries(doRequest, { retries = 2, baseDelayMs = 400 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await doRequest();
+      if (attempt < retries && resp && isTransientStatus(resp.status)) {
+        await sleep(baseDelayMs * Math.pow(2, attempt));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries && isTransientError(err)) {
+        await sleep(baseDelayMs * Math.pow(2, attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
+// Cloud providers that egress prompt content off-box → redact secrets first.
+const CLOUD_PROVIDERS = new Set(['openai', 'anthropic', 'bedrock', 'github_copilot']);
+
+/**
+ * Detect document types that can't produce a REST config, so we reject up front
+ * instead of spending an LLM call (or inviting hallucination). OData $metadata
+ * (EDMX) is handled deterministically before this runs.
+ */
+function detectNonRestDocument(text) {
+  const head = String(text || '').slice(0, 4096);
+  if (/^\s*%PDF-/.test(text)) {
+    return {
+      code: 'NON_REST_DOCUMENT',
+      error: 'That looks like a PDF, not API documentation.',
+      hint: 'Copy the REST endpoint docs as text, or paste the OpenAPI/Swagger spec or OData $metadata.',
+    };
+  }
+  if (/<\s*(?:wsdl:)?definitions\b/i.test(head) || /xmlns:wsdl\s*=/i.test(head)
+      || /<\s*soap(?:env|-env)?:Envelope\b/i.test(head)) {
+    return {
+      code: 'NON_REST_DOCUMENT',
+      error: 'That looks like a SOAP/WSDL service, which the Talend HTTPClient REST flow cannot drive.',
+      hint: 'This tool targets REST APIs. Provide a REST API\'s OpenAPI/Swagger spec or OData $metadata instead.',
+    };
+  }
+  return null;
+}
 
 // ─── AI settings ────────────────────────────────────────────────────────────
 //
@@ -738,7 +810,7 @@ function stripHtmlToText(html) {
  */
 // Fetch a candidate spec URL with the same SSRF protections as the main fetch.
 async function fetchRaw(urlString) {
-  const resp = await axios.get(urlString, {
+  const resp = await fetchWithRetries(() => axios.get(urlString, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; SaaSToTalend/1.0; +https://github.com/robertschoenfeldqlik/SaaS-To_Qlik)',
       'Accept': 'application/json,application/yaml,text/yaml,application/xml,text/plain,*/*',
@@ -751,7 +823,7 @@ async function fetchRaw(urlString) {
     httpsAgent: ssrfSafeHttpsAgent,
     transformResponse: [(d) => d],
     validateStatus: () => true,
-  });
+  }));
   return {
     status: resp.status,
     text: typeof resp.data === 'string' ? resp.data : '',
@@ -806,7 +878,7 @@ router.post('/fetch-url', async (req, res) => {
   }
 
   try {
-    const response = await axios.get(parsedUrl.toString(), {
+    const response = await fetchWithRetries(() => axios.get(parsedUrl.toString(), {
       headers: {
         // Real browser-shaped UA — many doc sites 403 plain axios.
         'User-Agent': 'Mozilla/5.0 (compatible; SaaSToTalend/1.0; +https://github.com/robertschoenfeldqlik/SaaS-To_Qlik)',
@@ -822,7 +894,7 @@ router.post('/fetch-url', async (req, res) => {
       // Get raw text — Jackson/JSON.parse later, after we decide what it is.
       transformResponse: [(data) => data],
       validateStatus: () => true,  // we'll handle non-2xx ourselves below
-    });
+    }));
 
     if (response.status < 200 || response.status >= 300) {
       const snippet = typeof response.data === 'string'
@@ -1018,6 +1090,13 @@ router.post('/generate-config', async (req, res) => {
       });
     }
 
+    // Reject document types that can't yield a REST config (PDF, SOAP/WSDL)
+    // before spending an LLM call. OData $metadata was handled above.
+    const nonRest = detectNonRestDocument(sourceText);
+    if (nonRest) {
+      return res.status(422).json(nonRest);
+    }
+
     // Thin-content guard: a page that returned only its <title> or an unrendered
     // JS shell has no real endpoints — feeding it to the model just invites
     // hallucinated ones. Real API docs reference a path, an HTTP method, or a
@@ -1052,6 +1131,22 @@ router.post('/generate-config', async (req, res) => {
       return res.status(400).json({ error: `API key required for ${effectiveProvider}. Configure in Settings.` });
     }
 
+    // Redact credential-shaped values BEFORE any cloud round-trip. The model
+    // only needs API structure, never a live token; docs/spec examples often
+    // embed real-looking ones. Local providers (ollama) are exempt — nothing
+    // leaves the host. Grounding (below) still uses the original `content`.
+    let promptContent = content;
+    let redactedCount = 0;
+    if (CLOUD_PROVIDERS.has(effectiveProvider)) {
+      const r = redactCredentialShapedValues(content);
+      promptContent = r.text;
+      redactedCount = r.redactedCount;
+      if (redactedCount > 0) {
+        logger.info({ provider: effectiveProvider, redactedCount },
+          'Redacted credential-shaped values before cloud egress');
+      }
+    }
+
     // Default user message is DIRECTIVE/imperative. Smaller local models
     // (gemma3:4b, etc.) reliably return an empty {} when given the softer
     // "Analyze this documentation and generate..." phrasing — they treat it
@@ -1060,8 +1155,8 @@ router.post('/generate-config', async (req, res) => {
     // streams on the same models. Verified: gemma3:4b went from 0 → 2
     // streams on the Open Brewery DB docs just by changing this wording.
     const userMessage = prompt
-      ? `${prompt}\n\n${content}`
-      : `Extract EVERY GET list endpoint from the API documentation below and emit the JSON config object exactly as specified in your instructions. Populate api_url, auth_method, and the streams array — one stream per GET list endpoint. Output the JSON now, nothing else.\n\nAPI DOCUMENTATION:\n${content}`;
+      ? `${prompt}\n\n${promptContent}`
+      : `Extract EVERY GET list endpoint from the API documentation below and emit the JSON config object exactly as specified in your instructions. Populate api_url, auth_method, and the streams array — one stream per GET list endpoint. Output the JSON now, nothing else.\n\nAPI DOCUMENTATION:\n${promptContent}`;
 
     logger.info({ provider: effectiveProvider, model: config.model, contentLength: content.length },
       'Starting AI config generation');
@@ -1070,6 +1165,14 @@ router.post('/generate-config', async (req, res) => {
 
     // Parse the AI response
     const parsed = parseAiResponse(result.text);
+
+    // Validate + coerce the shape before grounding. Weak models violate the
+    // output contract in mechanical ways (primary_keys as a string, params:null,
+    // an out-of-enum pagination_style, a records_path missing its $). Repair
+    // what's safe, drop structurally-unusable streams (no path), and record what
+    // changed — the prompt asks for this shape but can't guarantee it.
+    const { config: coerced, changes: coercionChanges, dropped: coercionDropped } =
+      validateAndCoerceConfig(parsed);
 
     // Ground the model's output in the actual source. A weak model will invent
     // plausible endpoints — or echo the examples in this prompt — that aren't in
@@ -1090,9 +1193,9 @@ router.post('/generate-config', async (req, res) => {
     };
 
     let droppedStreams = [];
-    if (parsed && Array.isArray(parsed.streams) && parsed.streams.length > 0) {
-      const kept = parsed.streams.filter(inSource);
-      droppedStreams = parsed.streams.filter((s) => !inSource(s));
+    if (coerced && Array.isArray(coerced.streams) && coerced.streams.length > 0) {
+      const kept = coerced.streams.filter(inSource);
+      droppedStreams = coerced.streams.filter((s) => !inSource(s));
       if (kept.length === 0) {
         // Everything the model returned was ungrounded — almost certainly
         // hallucinated. Fail loudly instead of handing back fiction.
@@ -1107,25 +1210,30 @@ router.post('/generate-config', async (req, res) => {
           droppedExamples: droppedStreams.map((s) => s.path || s.name).filter(Boolean).slice(0, 8),
         });
       }
-      parsed.streams = kept;
+      coerced.streams = kept;
     }
 
     logger.info({
       provider: effectiveProvider,
       model: config.model,
       rawResponsePreview: result.text?.substring(0, 500),
-      parsedStreamsCount: parsed?.streams?.length || 0,
-      parsedKeys: Object.keys(parsed || {}),
+      parsedStreamsCount: coerced?.streams?.length || 0,
+      coercions: coercionChanges.length,
+      coercionDropped: coercionDropped.length,
+      parsedKeys: Object.keys(coerced || {}),
     }, 'AI generation result');
 
     res.json({
-      config: parsed,
-      streams_count: parsed.streams?.length || 0,
+      config: coerced,
+      streams_count: coerced.streams?.length || 0,
       metadata: {
         provider: result.provider,
         model: result.model,
         tokens: result.tokens,
         droppedUngrounded: droppedStreams.length,
+        coerced: coercionChanges.length,
+        coercionDropped: coercionDropped.length,
+        redactedSecrets: redactedCount,
       },
     });
   } catch (err) {
@@ -1148,6 +1256,26 @@ router.post('/generate-config', async (req, res) => {
         hint: 'Make sure `ollama serve` is running on the host. If this server is in Docker, your Ollama must be bound to 0.0.0.0:11434, not 127.0.0.1.',
         attempts: err.attempts,
         code: err.code,
+      });
+    }
+    // Classify provider 429s: a quota/billing 429 is permanent for the window —
+    // fail fast with an actionable message instead of letting the user retry
+    // into the same wall. A plain rate-limit 429 is transient.
+    if (err.response?.status === 429) {
+      const body = typeof err.response.data === 'string'
+        ? err.response.data
+        : JSON.stringify(err.response.data || '');
+      if (/quota|billing|insufficient_quota|exceeded your current quota/i.test(body)) {
+        return res.status(429).json({
+          error: 'AI provider quota/billing limit reached.',
+          code: 'PROVIDER_QUOTA_EXCEEDED',
+          hint: 'Check your plan/billing, switch providers in Settings, or wait for the quota window to reset.',
+        });
+      }
+      return res.status(429).json({
+        error: 'AI provider is rate-limiting requests.',
+        code: 'PROVIDER_RATE_LIMITED',
+        hint: 'Wait a few seconds and try again.',
       });
     }
     if (err.response?.status === 401) {
