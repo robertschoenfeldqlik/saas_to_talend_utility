@@ -1,0 +1,22 @@
+{
+  "name": "bintable.com",
+  "specUrl": "https://api.apis.guru/v2/specs/bintable.com/1.0.0-oas3/openapi.json",
+  "specHash": "4a46e7bd8a611d6b",
+  "operationCount": 2,
+  "prose": "# BIN Lookup API API\n\nBIN lookup API, the free api service from bintable.com to lookup card information using it's BIN. the service maintains updated database based on the comunity and other third party services to make sure all BINs in the database are accurate and up to date.\n\n## Getting started\n\nThe BIN Lookup API API is a JSON REST API. All endpoints are relative to the base URL `https://api.bintable.com/v1`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /balance\nCheck Balance\nReturns a list of records.\nAccepts query parameters: `api_key`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /{bin}\nLookup for bin\nReturns a list of records.\nAccepts query parameters: `api_key`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://api.bintable.com/v1",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "balance",
+        "path": "/balance",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

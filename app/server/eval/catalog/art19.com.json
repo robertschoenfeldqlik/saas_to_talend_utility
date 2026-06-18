@@ -1,0 +1,106 @@
+{
+  "name": "art19.com",
+  "specUrl": "https://api.apis.guru/v2/specs/art19.com/1.0.0/openapi.json",
+  "specHash": "d55de312ec03e113",
+  "operationCount": 22,
+  "prose": "# ART19 Content API Documentation API\n\nThe ART19 Content API conforms to the [JSON:API specification](http://jsonapi.org). API requests **MUST** use the HTTP Accept header: `Accept: application/vnd.api+json` API requests **MUST** be authenticated using the HTTP Authorization header: `Authorization: Token token=\"your-token\", credential=\"your-credential\"` ## General Notes Some query parameters use unencoded [ and ] characters simply for \n\n## Getting started\n\nThe ART19 Content API Documentation API is a JSON REST API. All endpoints are relative to the base URL `https://art19.com`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `Authorization` header on every request.\n\n## API reference\n\n### GET /classification_inclusions\nGet ClassificationInclusion records\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `classification_id`, `classification_type`, `classified_id`, `classified_type`, `q`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /classification_inclusions/{id}\nGet a specific classification inclusion\nReturns a single record.\n\n### GET /classifications\nGet a list of classifications\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `type`, `q`, `is_country`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /classifications/{id}\nGet a specific classification\nReturns a single record.\n\n### GET /credits\nGet a list of credits\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `creditable_id`, `creditable_type`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /credits/{id}\nGet a specific credit\nReturns a single record.\n\n### GET /episodes\nGet a list of episodes\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `included_in_inventory_calendar`, `month`, `published`, `q`, `released_after`, `released_before`, `rss`, `season_id`, `series_id`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /episodes/{id}\nGet a specific episode\nReturns a single record.\n\n### GET /episodes/{id}/next_sibling\nGet the episode released right after the specified one\nReturns a single record.\n\n### GET /episodes/{id}/previous_sibling\nGet the episode released right before the specified one\nReturns a single record.\n\n### GET /images\nGet a list of images\nReturns a list of records.\nAccepts query parameters: `ids[]`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /images/{id}\nGet a specific image\nReturns a single record.\n\n### GET /media_assets\nGet a list of media assets\nReturns a list of records.\nAccepts query parameters: `ids[]`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /media_assets/{id}\nGet a specific media asset\nReturns a single record.\n\n### GET /networks\nGet a list of networks\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `q`, `ad_rep_account_id`, `ad_deal_status`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /networks/{id}\nGet a specific network\nReturns a single record.\n\n### GET /people\nGet a list of people\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `q`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /people/{id}\nGet a specific person\nReturns a single record.\n\n### GET /seasons\nGet a list of seasons\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `series_id`, `q`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /seasons/{id}\nGet a specific season\nReturns a single record.\n\n### GET /series\nGet a list of series\nReturns a list of records.\nAccepts query parameters: `ids[]`, `page[number]`, `page[size]`, `ad_rep_account_id`, `network_id`, `q`, `sort`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /series/{id}\nGet a specific series\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://art19.com",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "Authorization"
+    },
+    "endpoints": [
+      {
+        "name": "classification_inclusions",
+        "path": "/classification_inclusions",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "classifications",
+        "path": "/classifications",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "credits",
+        "path": "/credits",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "episodes",
+        "path": "/episodes",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "images",
+        "path": "/images",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "media_assets",
+        "path": "/media_assets",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "networks",
+        "path": "/networks",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "people",
+        "path": "/people",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "seasons",
+        "path": "/seasons",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "series",
+        "path": "/series",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

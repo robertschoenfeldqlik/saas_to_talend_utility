@@ -1,0 +1,36 @@
+{
+  "name": "cdcgov.local:prime-data-hub",
+  "specUrl": "https://api.apis.guru/v2/specs/cdcgov.local/prime-data-hub/0.2.0-oas3/openapi.json",
+  "specHash": "0ac39c660ca10fac",
+  "operationCount": 13,
+  "prose": "# Prime ReportStream API\n\nA router of public health data from multiple senders and receivers\n\n## Getting started\n\nThe Prime ReportStream API is a JSON REST API. All endpoints are relative to the base URL `http://cdcgov.local`.\n\n## Authentication\n\nAuthorization uses OAuth 2.0. Obtain an access token from the token endpoint, then send it as a Bearer token.\n\n## API reference\n\n### POST /reports\nPost a report to the data hub\n\n### GET /settings/organizations\nThe settings for all organizations of the system. Must have admin access.\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /settings/organizations/{organizationName}\nA single organization settings\nReturns a single record.\n\n### PUT /settings/organizations/{organizationName}\nCreate or update the direct settings associated with an organization\n\n### DELETE /settings/organizations/{organizationName}\nDelete an organization (and the associated receivers and senders)\n\n### GET /settings/organizations/{organizationName}/receivers\nA list of receivers and their current settings\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /settings/organizations/{organizationName}/receivers/{receiverName}\nThe settings of a single of receiver\nReturns a single record.\n\n### PUT /settings/organizations/{organizationName}/receivers/{receiverName}\nUpdate a single reciever\n\n### DELETE /settings/organizations/{organizationName}/receivers/{receiverName}\nDelete a receiver\n\n### GET /settings/organizations/{organizationName}/senders\nA list of senders\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /settings/organizations/{organizationName}/senders/{senderName}\nThe settings of a single of sender\nReturns a single record.\n\n### PUT /settings/organizations/{organizationName}/senders/{senderName}\nUpdate a single sender\n\n### DELETE /settings/organizations/{organizationName}/senders/{senderName}\nDelete a sender\n",
+  "oracle": {
+    "baseUrl": "http://cdcgov.local",
+    "auth": {
+      "type": "OAUTH2"
+    },
+    "endpoints": [
+      {
+        "name": "organizations",
+        "path": "/settings/organizations",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "receivers",
+        "path": "/settings/organizations/{organizationName}/receivers",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "senders",
+        "path": "/settings/organizations/{organizationName}/senders",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

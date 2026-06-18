@@ -1,0 +1,31 @@
+{
+  "name": "cybertaxonomy.eu",
+  "specUrl": "https://api.apis.guru/v2/specs/cybertaxonomy.eu/1.0/swagger.json",
+  "specHash": "4e1b36bb63480172",
+  "operationCount": 2,
+  "prose": "# EU BON UTIS API\n\nThe Unified Taxonomic Information Service (UTIS) is the taxonomic backbone for the EU-BON project\n\n## Getting started\n\nThe EU BON UTIS API is a JSON REST API. All endpoints are relative to the base URL `http://cybertaxonomy.eu/eu-bon/utis/1.0`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /capabilities\ncapabilities\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /search\nsearch\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "http://cybertaxonomy.eu/eu-bon/utis/1.0",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "capabilities",
+        "path": "/capabilities",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "search",
+        "path": "/search",
+        "recordsPath": "$.query[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

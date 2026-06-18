@@ -1,0 +1,50 @@
+{
+  "name": "apis.guru",
+  "specUrl": "https://api.apis.guru/v2/specs/apis.guru/2.2.0/openapi.json",
+  "specHash": "23a8f7c4e3084ec7",
+  "operationCount": 7,
+  "prose": "# APIs.guru API\n\nWikipedia for Web APIs. Repository of API definitions in OpenAPI format. **Warning**: If you want to be notified about changes in advance please join our [Slack channel](https://join.slack.com/t/mermade/shared_invite/zt-g78g7xir-MLE_CTCcXCdfJfG3CJe9qA). Client sample: [[Demo]](https://apis.guru/simple-ui) [[Repo]](https://github.com/APIs-guru/simple-ui)\n\n## Getting started\n\nThe APIs.guru API is a JSON REST API. All endpoints are relative to the base URL `https://api.apis.guru/v2`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /list.json\nList all APIs\nReturns a single record.\n\n### GET /metrics.json\nGet basic metrics\nReturns a single record.\n\n### GET /providers.json\nList all providers\nReturns a list of records.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /specs/{provider}/{api}.json\nRetrieve one version of a particular API\nReturns a single record.\n\n### GET /specs/{provider}/{service}/{api}.json\nRetrieve one version of a particular API with a serviceName.\nReturns a single record.\n\n### GET /{provider}.json\nList all APIs for a particular provider\nReturns a single record.\n\n### GET /{provider}/services.json\nList all serviceNames for a particular provider\nReturns a list of records.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n",
+  "oracle": {
+    "baseUrl": "https://api.apis.guru/v2",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "list.json",
+        "path": "/list.json",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "metrics.json",
+        "path": "/metrics.json",
+        "recordsPath": "$.datasets[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "providers.json",
+        "path": "/providers.json",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": ".json",
+        "path": "/{provider}.json",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "services.json",
+        "path": "/{provider}/services.json",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

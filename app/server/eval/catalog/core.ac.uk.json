@@ -1,0 +1,30 @@
+{
+  "name": "core.ac.uk",
+  "specUrl": "https://api.apis.guru/v2/specs/core.ac.uk/2.0/swagger.json",
+  "specHash": "3ffd373b0dfad9c3",
+  "operationCount": 18,
+  "prose": "# CORE API v2 API\n\n<p style=\"text-align: justify;\">You can use the CORE API to access the resources harvested and enriched by CORE. If you encounter any problems with the API, please <a href=\"/contact\">report them to us</a>.</p> <h2>Overview</h2> <p style=\"text-align: justify;\">The API is organised by resource type. The resources are <b>articles</b>, <b>journals</b> and <b>repositories</b> and are represented using \n\n## Getting started\n\nThe CORE API v2 API is a JSON REST API. All endpoints are relative to the base URL `http://core.ac.uk/api-v2`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `apiKey` header on every request.\n\n## API reference\n\n### POST /articles/dedup\nGet all near duplicate articles\n\n### POST /articles/get\nBatch operation for retrieving articles by CORE ID\n\n### GET /articles/get/{coreId}\nGet article by CORE ID\nReturns a single record.\n\n### GET /articles/get/{coreId}/download/pdf\nGet fulltext PDF by CORE ID\nReturns a single record.\n\n### GET /articles/get/{coreId}/history\nGet article history by CORE ID\nReturns a list of records.\nAccepts query parameters: `page`, `pageSize`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### POST /articles/search\nBatch operation for search through articles\n\n### GET /articles/search/{query}\nSearch through all documents\nReturns a list of records.\nAccepts query parameters: `page`, `pageSize`, `metadata`, `fulltext`, `citations`, `similar`, `duplicate`, `urls`, `faithfulMetadata`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### POST /articles/similar\nGet articles by similarity to a text\n\n### POST /journals/get\nBatch operation for retrieving journals by ISSN\n\n### GET /journals/get/{issn}\nFind journal by ISSN\nReturns a single record.\n\n### POST /journals/search\nBatch operation for search through journals\n\n### GET /journals/search/{query}\nSearch through journals\nReturns a list of records.\nAccepts query parameters: `page`, `pageSize`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### POST /repositories/get\nBatch operation for retrieving repositories by CORE repository ID\n\n### GET /repositories/get/{repositoryId}\nGet repository by CORE repository ID\nReturns a single record.\n\n### POST /repositories/search\nBatch operation for searching through repositories\n\n### GET /repositories/search/{query}\nSearch through all repositories\nReturns a list of records.\nAccepts query parameters: `page`, `pageSize`, `stats`, `depositHistory`, `depositHistoryCumulative`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### POST /search\nBatch operation for search through all resources\n\n### GET /search/{query}\nSearch through all resources\nReturns a list of records.\nAccepts query parameters: `page`, `pageSize`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n",
+  "oracle": {
+    "baseUrl": "http://core.ac.uk/api-v2",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "apiKey"
+    },
+    "endpoints": [
+      {
+        "name": "pdf",
+        "path": "/articles/get/{coreId}/download/pdf",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "history",
+        "path": "/articles/get/{coreId}/history",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      }
+    ]
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "name": "dataatwork.org",
+  "specUrl": "https://api.apis.guru/v2/specs/dataatwork.org/1.0/swagger.json",
+  "specHash": "21a19873618c1b94",
+  "operationCount": 13,
+  "prose": "# Open Skills API API\n\nA complete and standard data store for canonical and emerging skills, knowledge, abilities, tools, technolgies, and how they relate to jobs.\n\n## Getting started\n\nThe Open Skills API API is a JSON REST API. All endpoints are relative to the base URL `http://api.dataatwork.org/v1`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /jobs\nJob Titles and Descriptions\nReturns a list of records.\nAccepts query parameters: `offset`, `limit`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /jobs/autocomplete\nJob Title Autocomplete\nReturns a list of records.\nAccepts query parameters: `begins_with`, `contains`, `ends_with`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /jobs/normalize\nJob Title Normalization\nReturns a list of records.\nAccepts query parameters: `job_title`, `limit`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /jobs/unusual_titles\nUnusual Job Titles\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /jobs/{id}\nJob Title and Description\nReturns a single record.\n\n### GET /jobs/{id}/related_jobs\nJobs Associated with a Job\nReturns a single record.\n\n### GET /jobs/{id}/related_skills\nSkills Associated with a Job\nReturns a single record.\n\n### GET /skills\nSkill Names and Descriptions\nReturns a list of records.\nAccepts query parameters: `offset`, `limit`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /skills/autocomplete\nSkill Name Autocomplete\nReturns a single record.\n\n### GET /skills/normalize\nSkill Name Normalization\nReturns a list of records.\nAccepts query parameters: `skill_name`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /skills/{id}\nSkill Name and Description\nReturns a single record.\n\n### GET /skills/{id}/related_jobs\nJobs Associated with a Skill\nReturns a single record.\n\n### GET /skills/{id}/related_skills\nSkills Associated with a Skill\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "http://api.dataatwork.org/v1",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "jobs",
+        "path": "/jobs",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "autocomplete",
+        "path": "/jobs/autocomplete",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "normalize",
+        "path": "/jobs/normalize",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "unusual_titles",
+        "path": "/jobs/unusual_titles",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "related_jobs",
+        "path": "/jobs/{id}/related_jobs",
+        "recordsPath": "$.related_job_titles[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "related_skills",
+        "path": "/jobs/{id}/related_skills",
+        "recordsPath": "$.skills[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "skills",
+        "path": "/skills",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "autocomplete",
+        "path": "/skills/autocomplete",
+        "recordsPath": "$.jobs[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "normalize",
+        "path": "/skills/normalize",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "related_jobs",
+        "path": "/skills/{id}/related_jobs",
+        "recordsPath": "$.jobs[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "related_skills",
+        "path": "/skills/{id}/related_skills",
+        "recordsPath": "$.related_skill_name[*]",
+        "primaryKeys": [
+          "uuid"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

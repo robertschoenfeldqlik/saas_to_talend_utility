@@ -1,0 +1,24 @@
+{
+  "name": "deutschebahn.com:betriebsstellen",
+  "specUrl": "https://api.apis.guru/v2/specs/deutschebahn.com/betriebsstellen/v1/swagger.json",
+  "specHash": "9a920ddf8bc23423",
+  "operationCount": 2,
+  "prose": "# Betriebsstellen API\n\nThis REST-API enables you to query station and stop infos\n\n## Getting started\n\nThe Betriebsstellen API is a JSON REST API. All endpoints are relative to the base URL `https://api.deutschebahn.com/betriebsstellen/v1`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /betriebsstellen\nGet information of stations matching a given text\nReturns a list of records.\nAccepts query parameters: `name`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /betriebsstellen/{abbrev}\nGet information about a specific station or stop by abbrevation\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://api.deutschebahn.com/betriebsstellen/v1",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "betriebsstellen",
+        "path": "/betriebsstellen",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

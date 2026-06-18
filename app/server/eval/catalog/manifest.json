@@ -1,0 +1,187 @@
+{
+  "note": "Golden benchmark built from the deterministic engine. Rebuild after changing synthDocs.js or the engine.",
+  "maxOps": 25,
+  "count": 30,
+  "entries": [
+    {
+      "name": "1forge.com",
+      "file": "1forge.com.json",
+      "specHash": "fb1f64450ecb4186",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "1password.local:connect",
+      "file": "1password.local_connect.json",
+      "specHash": "cf419ac953e31ab2",
+      "oracleEndpoints": 7
+    },
+    {
+      "name": "ably.io:platform",
+      "file": "ably.io_platform.json",
+      "specHash": "e2d7989f73b78ac6",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "ably.net:control",
+      "file": "ably.net_control.json",
+      "specHash": "d36c6c5cc58cb255",
+      "oracleEndpoints": 5
+    },
+    {
+      "name": "afterbanks.com",
+      "file": "afterbanks.com.json",
+      "specHash": "2e65e9a42a64b77c",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "apis.guru",
+      "file": "apis.guru.json",
+      "specHash": "23a8f7c4e3084ec7",
+      "oracleEndpoints": 5
+    },
+    {
+      "name": "archive.org:search",
+      "file": "archive.org_search.json",
+      "specHash": "89ca95476f14193b",
+      "oracleEndpoints": 3
+    },
+    {
+      "name": "art19.com",
+      "file": "art19.com.json",
+      "specHash": "d55de312ec03e113",
+      "oracleEndpoints": 10
+    },
+    {
+      "name": "authentiq.io",
+      "file": "authentiq.io.json",
+      "specHash": "05050d00256d5047",
+      "oracleEndpoints": 3
+    },
+    {
+      "name": "azure.com:EnterpriseKnowledgeGraph-EnterpriseKnowledgeGraphSwagger",
+      "file": "azure.com_EnterpriseKnowledgeGraph-EnterpriseKnowledgeGraphSwagger.json",
+      "specHash": "2691315224cc9073",
+      "oracleEndpoints": 3
+    },
+    {
+      "name": "bandsintown.com",
+      "file": "bandsintown.com.json",
+      "specHash": "b93079fe7bd0c54f",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "bintable.com",
+      "file": "bintable.com.json",
+      "specHash": "4a46e7bd8a611d6b",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "blazemeter.com",
+      "file": "blazemeter.com.json",
+      "specHash": "ddb7136ad41439ef",
+      "oracleEndpoints": 9
+    },
+    {
+      "name": "browshot.com",
+      "file": "browshot.com.json",
+      "specHash": "655e81883c1829b5",
+      "oracleEndpoints": 11
+    },
+    {
+      "name": "bufferapp.com",
+      "file": "bufferapp.com.json",
+      "specHash": "b81764b2fb3ea77d",
+      "oracleEndpoints": 6
+    },
+    {
+      "name": "bulksms.com",
+      "file": "bulksms.com.json",
+      "specHash": "8d96fb91a64990f0",
+      "oracleEndpoints": 4
+    },
+    {
+      "name": "byautomata.io",
+      "file": "byautomata.io.json",
+      "specHash": "a7eb58597c14b3b3",
+      "oracleEndpoints": 3
+    },
+    {
+      "name": "c19qrserver.local",
+      "file": "c19qrserver.local.json",
+      "specHash": "6ddadbbba74a52e4",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "carbondoomsday.com",
+      "file": "carbondoomsday.com.json",
+      "specHash": "033a026ad07b83b1",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "cdcgov.local:prime-data-hub",
+      "file": "cdcgov.local_prime-data-hub.json",
+      "specHash": "0ac39c660ca10fac",
+      "oracleEndpoints": 3
+    },
+    {
+      "name": "circleci.com",
+      "file": "circleci.com.json",
+      "specHash": "1aecb0fe4075b7dc",
+      "oracleEndpoints": 6
+    },
+    {
+      "name": "cnab-online.herokuapp.com",
+      "file": "cnab-online.herokuapp.com.json",
+      "specHash": "2f5ca4d12cce276b",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "codesearch.debian.net",
+      "file": "codesearch.debian.net.json",
+      "specHash": "8aeb2656ecc787e2",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "core.ac.uk",
+      "file": "core.ac.uk.json",
+      "specHash": "3ffd373b0dfad9c3",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "covid19-api.com",
+      "file": "covid19-api.com.json",
+      "specHash": "bac07171103c2837",
+      "oracleEndpoints": 9
+    },
+    {
+      "name": "crediwatch.com:covid19",
+      "file": "crediwatch.com_covid19.json",
+      "specHash": "97864559d499f26d",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "cybertaxonomy.eu",
+      "file": "cybertaxonomy.eu.json",
+      "specHash": "4e1b36bb63480172",
+      "oracleEndpoints": 2
+    },
+    {
+      "name": "dataatwork.org",
+      "file": "dataatwork.org.json",
+      "specHash": "21a19873618c1b94",
+      "oracleEndpoints": 11
+    },
+    {
+      "name": "datasette.local",
+      "file": "datasette.local.json",
+      "specHash": "256ed0eda6ca3e68",
+      "oracleEndpoints": 1
+    },
+    {
+      "name": "deutschebahn.com:betriebsstellen",
+      "file": "deutschebahn.com_betriebsstellen.json",
+      "specHash": "9a920ddf8bc23423",
+      "oracleEndpoints": 1
+    }
+  ]
+}

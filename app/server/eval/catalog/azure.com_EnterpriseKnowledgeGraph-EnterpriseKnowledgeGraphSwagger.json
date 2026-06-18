@@ -1,0 +1,40 @@
+{
+  "name": "azure.com:EnterpriseKnowledgeGraph-EnterpriseKnowledgeGraphSwagger",
+  "specUrl": "https://api.apis.guru/v2/specs/azure.com/EnterpriseKnowledgeGraph-EnterpriseKnowledgeGraphSwagger/2018-12-03/swagger.json",
+  "specHash": "2691315224cc9073",
+  "operationCount": 7,
+  "prose": "# Azure Enterprise Knowledge Graph Service API\n\nAzure Enterprise Knowledge Graph Service is a platform for creating knowledge graphs at scale.\n\n## Getting started\n\nThe Azure Enterprise Knowledge Graph Service API is a JSON REST API. All endpoints are relative to the base URL `https://management.azure.com`.\n\n## Authentication\n\nAuthorization uses OAuth 2.0. Obtain an access token from the token endpoint, then send it as a Bearer token.\n\n## API reference\n\n### GET /providers/Microsoft.EnterpriseKnowledgeGraph/operations\nLists all the available EnterpriseKnowledgeGraph services operations.\nReturns a list of records.\nAccepts query parameters: `api-version`.\n\nSample response:\n\n```json\n{ \"value\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /subscriptions/{subscriptionId}/providers/Microsoft.EnterpriseKnowledgeGraph/services\nReturns all the resources of a particular type belonging to a subscription.\nReturns a list of records.\nAccepts query parameters: `api-version`.\n\nSample response:\n\n```json\n{ \"value\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services\nReturns all the resources of a particular type belonging to a resource group\nReturns a list of records.\nAccepts query parameters: `api-version`.\n\nSample response:\n\n```json\n{ \"value\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services/{resourceName}\nReturns a EnterpriseKnowledgeGraph service specified by the parameters.\nReturns a single record.\n\n### PUT /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services/{resourceName}\nCreates a EnterpriseKnowledgeGraph Service. EnterpriseKnowledgeGraph Service is a resource group wide resource type.\n\n### PATCH /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services/{resourceName}\nUpdates a EnterpriseKnowledgeGraph Service\n\n### DELETE /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services/{resourceName}\nDeletes a EnterpriseKnowledgeGraph Service from the resource group.\n",
+  "oracle": {
+    "baseUrl": "https://management.azure.com",
+    "auth": {
+      "type": "OAUTH2"
+    },
+    "endpoints": [
+      {
+        "name": "operations",
+        "path": "/providers/Microsoft.EnterpriseKnowledgeGraph/operations",
+        "recordsPath": "$.value[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "services",
+        "path": "/subscriptions/{subscriptionId}/providers/Microsoft.EnterpriseKnowledgeGraph/services",
+        "recordsPath": "$.value[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "services",
+        "path": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EnterpriseKnowledgeGraph/services",
+        "recordsPath": "$.value[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

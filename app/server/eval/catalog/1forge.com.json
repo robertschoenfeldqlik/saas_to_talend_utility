@@ -1,0 +1,29 @@
+{
+  "name": "1forge.com",
+  "specUrl": "https://api.apis.guru/v2/specs/1forge.com/0.0.1/swagger.json",
+  "specHash": "fb1f64450ecb4186",
+  "operationCount": 2,
+  "prose": "# 1Forge Finance APIs API\n\nStock and Forex Data and Realtime Quotes\n\n## Getting started\n\nThe 1Forge Finance APIs API is a JSON REST API. All endpoints are relative to the base URL `https://1forge.com/forex-quotes`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /quotes\nGet quotes for all symbols\nReturns a single record.\n\n### GET /symbols\nGet a list of symbols for which we provide real-time quotes\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://1forge.com/forex-quotes",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "quotes",
+        "path": "/quotes",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "symbols",
+        "path": "/symbols",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

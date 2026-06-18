@@ -1,0 +1,49 @@
+{
+  "name": "bulksms.com",
+  "specUrl": "https://api.apis.guru/v2/specs/bulksms.com/1.0.0/openapi.json",
+  "specHash": "8d96fb91a64990f0",
+  "operationCount": 15,
+  "prose": "# BulkSMS JSON REST API API\n\n## Overview The JSON REST API allows you to submit and receive [BulkSMS](https://www.bulksms.com/) messages. You can also get access to past messages and see your account profile. The base URL to use for this service is `https://api.bulksms.com/v1`. The base URL cannot be used on its own; you must append a path that identifies an operation and you may have to specify some path parameters as well. \n\n## Getting started\n\nThe BulkSMS JSON REST API API is a JSON REST API. All endpoints are relative to the base URL `https://api.bulksms.com/v1`.\n\n## Authentication\n\nThis API uses HTTP Basic authentication — supply your username and password with each request.\n\n## API reference\n\n### GET /blocked-numbers\nList blocked numbers\nReturns a single record.\n\n### POST /blocked-numbers\nCreate a blocked number\n\n### POST /credit/transfer\nTransfer credits to another account\n\n### GET /messages\nRetrieve Messages\nReturns a list of records.\nAccepts query parameters: `limit`, `filter`, `sortOrder`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /messages\nSend Messages\n\n### GET /messages/send\nSend message by simple GET or POST\nReturns a list of records.\nAccepts query parameters: `to`, `body`, `deduplication-id`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /messages/{id}\nShow Message\nReturns a single record.\n\n### GET /messages/{id}/relatedReceivedMessages\nList Related Messages\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /profile\nGet profile\nReturns a single record.\n\n### POST /rmm/pre-sign-attachment\nUpload an attachment via a signed URL\n\n### GET /webhooks\nList webhooks\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /webhooks\nCreate a webhook\n\n### GET /webhooks/{id}\nRead a webhook\nReturns a single record.\n\n### POST /webhooks/{id}\nUpdate a webhook\n\n### DELETE /webhooks/{id}\nDelete a webhook\n",
+  "oracle": {
+    "baseUrl": "https://api.bulksms.com/v1",
+    "auth": {
+      "type": "BASIC"
+    },
+    "endpoints": [
+      {
+        "name": "messages",
+        "path": "/messages",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "send",
+        "path": "/messages/send",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "related_received_messages",
+        "path": "/messages/{id}/relatedReceivedMessages",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "webhooks",
+        "path": "/webhooks",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

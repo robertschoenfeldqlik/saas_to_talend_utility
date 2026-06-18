@@ -1,0 +1,24 @@
+{
+  "name": "bandsintown.com",
+  "specUrl": "https://api.apis.guru/v2/specs/bandsintown.com/3.0.0/swagger.json",
+  "specHash": "b93079fe7bd0c54f",
+  "operationCount": 2,
+  "prose": "# Bandsintown API API\n\n# What is the Bandsintown API? The Bandsintown API is designed for artists and enterprises representing artists. It offers read-only access to artist info and artist events: - artist info: returns the link to the Bandsintown artist page, the link to the artist photo, the current number of trackers and more - artist events: returns the list of events including their date and time, venue name and lo\n\n## Getting started\n\nThe Bandsintown API API is a JSON REST API. All endpoints are relative to the base URL `https://rest.bandsintown.com`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /artists/{artistname}\nGet artist information\nReturns a single record.\n\n### GET /artists/{artistname}/events\nGet upcoming, past, or all artist events, or events within a date range\nReturns a list of records.\nAccepts query parameters: `app_id`, `date`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://rest.bandsintown.com",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "events",
+        "path": "/artists/{artistname}/events",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

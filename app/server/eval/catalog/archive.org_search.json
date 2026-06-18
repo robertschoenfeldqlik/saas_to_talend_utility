@@ -1,0 +1,36 @@
+{
+  "name": "archive.org:search",
+  "specUrl": "https://api.apis.guru/v2/specs/archive.org/search/1.0.0/openapi.json",
+  "specHash": "89ca95476f14193b",
+  "operationCount": 3,
+  "prose": "# Search Services API\n\nAPI for Internet Archive's Search-related services\n\n## Getting started\n\nThe Search Services API is a JSON REST API. All endpoints are relative to the base URL `https://api.archive.org`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /search/v1/fields\nFields that can be requested\nReturns a list of records.\nAccepts query parameters: `callback`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /search/v1/organic\nReturn relevance-based results from search queries\nReturns a list of records.\nAccepts query parameters: `q`, `field`, `size`, `total_only`, `callback`.\n\nSample response:\n\n```json\n{ \"items\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /search/v1/scrape\nScrape search results from Internet Archive, allowing a scrolling cursor\nReturns a list of records.\nAccepts query parameters: `q`, `field`, `sort`, `size`, `cursor`, `total_only`, `callback`.\n\nSample response:\n\n```json\n{ \"items\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n",
+  "oracle": {
+    "baseUrl": "https://api.archive.org",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "fields",
+        "path": "/search/v1/fields",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "organic",
+        "path": "/search/v1/organic",
+        "recordsPath": "$.items[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "scrape",
+        "path": "/search/v1/scrape",
+        "recordsPath": "$.items[*]",
+        "primaryKeys": [],
+        "paginationStyle": "cursor"
+      }
+    ]
+  }
+}

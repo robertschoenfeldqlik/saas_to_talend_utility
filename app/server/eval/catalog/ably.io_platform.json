@@ -1,0 +1,31 @@
+{
+  "name": "ably.io:platform",
+  "specUrl": "https://api.apis.guru/v2/specs/ably.io/platform/1.1.0/openapi.json",
+  "specHash": "e2d7989f73b78ac6",
+  "operationCount": 22,
+  "prose": "# Platform API API\n\nThe [REST API specification](https://www.ably.io/documentation/rest-api) for Ably.\n\n## Getting started\n\nThe Platform API API is a JSON REST API. All endpoints are relative to the base URL `https://rest.ably.io`.\n\n## Authentication\n\nEvery request must include an `Authorization: Bearer <token>` header with your access token.\n\n## API reference\n\n### GET /channels\nEnumerate all active channels of the application\nReturns a single record.\n\n### GET /channels/{channel_id}\nGet metadata of a channel\nReturns a single record.\n\n### GET /channels/{channel_id}/messages\nGet message history for a channel\nReturns a list of records.\nAccepts query parameters: `start`, `limit`, `end`, `direction`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /channels/{channel_id}/messages\nPublish a message to a channel\n\n### GET /channels/{channel_id}/presence\nGet presence of a channel\nReturns a list of records.\nAccepts query parameters: `clientId`, `connectionId`, `limit`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /channels/{channel_id}/presence/history\nGet presence history of a channel\nReturns a list of records.\nAccepts query parameters: `start`, `limit`, `end`, `direction`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /keys/{keyName}/requestToken\nRequest an access token\n\n### GET /push/channelSubscriptions\nList channel subscriptions\nReturns a single record.\n\n### POST /push/channelSubscriptions\nSubscribe a device to a channel\n\n### DELETE /push/channelSubscriptions\nDelete a registered device's update token\n\n### GET /push/channels\nList all channels with at least one subscribed device\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /push/deviceRegistrations\nList devices registered for receiving push notifications\nReturns a single record.\n\n### POST /push/deviceRegistrations\nRegister a device for receiving push notifications\n\n### DELETE /push/deviceRegistrations\nUnregister matching devices for push notifications\n\n### GET /push/deviceRegistrations/{device_id}\nGet a device registration\nReturns a single record.\n\n### PUT /push/deviceRegistrations/{device_id}\nUpdate a device registration\n\n### PATCH /push/deviceRegistrations/{device_id}\nUpdate a device registration\n\n### DELETE /push/deviceRegistrations/{device_id}\nUnregister a single device for push notifications\n\n### GET /push/deviceRegistrations/{device_id}/resetUpdateToken\nReset a registered device's update token\nReturns a single record.\n\n### POST /push/publish\nPublish a push notification to device(s)\n\n### GET /stats\nRetrieve usage statistics for an application\nReturns a single record.\n\n### GET /time\nGet the service time\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://rest.ably.io",
+    "auth": {
+      "type": "BEARER_TOKEN"
+    },
+    "endpoints": [
+      {
+        "name": "messages",
+        "path": "/channels/{channel_id}/messages",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "presence",
+        "path": "/channels/{channel_id}/presence",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

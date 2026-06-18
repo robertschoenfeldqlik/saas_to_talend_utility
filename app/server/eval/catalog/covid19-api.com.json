@@ -1,0 +1,78 @@
+{
+  "name": "covid19-api.com",
+  "specUrl": "https://api.apis.guru/v2/specs/covid19-api.com/1.2.6/openapi.json",
+  "specHash": "bac07171103c2837",
+  "operationCount": 9,
+  "prose": "# COVID-19 data API API\n\n## Getting started\n\nThe COVID-19 data API API is a JSON REST API. All endpoints are relative to the base URL `https://api.example.com`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /country\ngetLatestCountryDataByName\nReturns a list of records.\nAccepts query parameters: `name`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /country/all\ngetLatestAllCountries\nReturns a list of records.\nAccepts query parameters: `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /country/code\ngetLatestCountryDataByCode\nReturns a list of records.\nAccepts query parameters: `code`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /help/countries\ngetListOfCountries\nReturns a list of records.\nAccepts query parameters: `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /report/country/all\ngetDailyReportAllCountries\nReturns a list of records.\nAccepts query parameters: `date`, `date-format`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /report/country/code\ngetDailyReportByCountryCode\nReturns a list of records.\nAccepts query parameters: `code`, `date`, `date-format`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /report/country/name\ngetDailyReportByCountryName\nReturns a list of records.\nAccepts query parameters: `name`, `date`, `date-format`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /report/totals\ngetDailyReportTotals\nReturns a list of records.\nAccepts query parameters: `date`, `date-format`, `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /totals\ngetLatestTotals\nReturns a list of records.\nAccepts query parameters: `format`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "country",
+        "path": "/country",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "all",
+        "path": "/country/all",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "code",
+        "path": "/country/code",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "countries",
+        "path": "/help/countries",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "all",
+        "path": "/report/country/all",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "code",
+        "path": "/report/country/code",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "name",
+        "path": "/report/country/name",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "totals",
+        "path": "/report/totals",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "totals",
+        "path": "/totals",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "name": "bufferapp.com",
+  "specUrl": "https://api.apis.guru/v2/specs/bufferapp.com/1/swagger.json",
+  "specHash": "b81764b2fb3ea77d",
+  "operationCount": 18,
+  "prose": "# Bufferapp API\n\nSocial media management for marketers and agencies\n\n## Getting started\n\nThe Bufferapp API is a JSON REST API. All endpoints are relative to the base URL `https://api.bufferapp.com/1`.\n\n## Authentication\n\nAuthorization uses OAuth 2.0. Obtain an access token from the token endpoint, then send it as a Bearer token.\n\n## API reference\n\n### GET /info/configuration{mediaTypeExtension}\nReturns an object with the current configuration that Buffer is using, including supported services, their icons and the varying limits of character and schedules.\nReturns a single record.\n\n### GET /links/shares{mediaTypeExtension}\nReturns an object with a the numbers of shares a link has had using Buffer.\nReturns a single record.\n\n### POST /profiles/{id}/schedules/update{mediaTypeExtension}\n\"Set the posting schedules for the specified social media profile.\n\n### GET /profiles/{id}/schedules{mediaTypeExtension}\nReturns details of the posting schedules associated with a social media profile.\nReturns a single record.\n\n### GET /profiles/{id}/updates/pending{mediaTypeExtension}\n\"Returns an array of updates that are currently in the buffer for an individual social media profile.\nReturns a single record.\n\n### POST /profiles/{id}/updates/reorder{mediaTypeExtension}\nEdit the order at which statuses for the specified social media profile will be sent out of the buffer.\n\n### GET /profiles/{id}/updates/sent{mediaTypeExtension}\nReturns an array of updates that have been sent from the buffer for an individual social media profile.\nReturns a single record.\n\n### POST /profiles/{id}/updates/shuffle{mediaTypeExtension}\nRandomize the order at which statuses for the specified social media profile will be sent out of the buffer.\n\n### GET /profiles/{id}{mediaTypeExtension}\nReturns details of the single specified social media profile.\nReturns a single record.\n\n### GET /profiles{mediaTypeExtension}\nReturns an array of social media profiles connected to a users account.\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /updates/create{mediaTypeExtension}\nCreate one or more new status updates.\n\n### POST /updates/{id}/destroy{mediaTypeExtension}\nPermanently delete an existing status update.\n\n### GET /updates/{id}/interactions{mediaTypeExtension}\nReturns the detailed information on individual interactions with the social media update such as favorites, retweets and likes.\nReturns a single record.\n\n### POST /updates/{id}/move_to_top{mediaTypeExtension}\nMove an existing status update to the top of the queue and recalculate times for all updates in the queue. Returns the update with its new posting time.\n\n### POST /updates/{id}/share{mediaTypeExtension}\nImmediately shares a single pending update and recalculates times for updates remaining in the queue.\n\n### POST /updates/{id}/update{mediaTypeExtension}\nEdit an existing, individual status update.\n\n### GET /updates/{id}{mediaTypeExtension}\nReturns a single social media update.\nReturns a single record.\n\n### GET /user{mediaTypeExtension}\nReturns a single user.\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://api.bufferapp.com/1",
+    "auth": {
+      "type": "OAUTH2"
+    },
+    "endpoints": [
+      {
+        "name": "schedules",
+        "path": "/profiles/{id}/schedules{mediaTypeExtension}",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "pending",
+        "path": "/profiles/{id}/updates/pending{mediaTypeExtension}",
+        "recordsPath": "$.updates[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      },
+      {
+        "name": "sent",
+        "path": "/profiles/{id}/updates/sent{mediaTypeExtension}",
+        "recordsPath": "$.updates[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      },
+      {
+        "name": "profiles",
+        "path": "/profiles/{id}{mediaTypeExtension}",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "profiles",
+        "path": "/profiles{mediaTypeExtension}",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id",
+          "_id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "interactions",
+        "path": "/updates/{id}/interactions{mediaTypeExtension}",
+        "recordsPath": "$.interactions[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      }
+    ]
+  }
+}

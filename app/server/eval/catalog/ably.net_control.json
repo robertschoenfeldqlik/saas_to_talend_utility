@@ -1,0 +1,59 @@
+{
+  "name": "ably.net:control",
+  "specUrl": "https://api.apis.guru/v2/specs/ably.net/control/1.0.14/openapi.json",
+  "specHash": "d36c6c5cc58cb255",
+  "operationCount": 22,
+  "prose": "# Control API v1 API\n\nUse the Control API to manage your applications, namespaces, keys, queues, rules, and more. Detailed information on using this API can be found in the Ably <a href=\"https://ably.com/documentation/control-api\">developer documentation</a>. Control API is currently in Beta.\n\n## Getting started\n\nThe Control API v1 API is a JSON REST API. All endpoints are relative to the base URL `https://control.ably.net/v1`.\n\n## Authentication\n\nEvery request must include an `Authorization: Bearer <token>` header with your access token.\n\n## API reference\n\n### GET /accounts/{account_id}/apps\nLists apps\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /accounts/{account_id}/apps\nCreates an app\n\n### GET /apps/{app_id}/keys\nLists app keys\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /apps/{app_id}/keys\nCreates a key\n\n### PATCH /apps/{app_id}/keys/{key_id}\nUpdates a key\n\n### POST /apps/{app_id}/keys/{key_id}/revoke\nRevokes a key\n\n### GET /apps/{app_id}/namespaces\nLists namespaces\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /apps/{app_id}/namespaces\nCreates a namespace\n\n### PATCH /apps/{app_id}/namespaces/{namespace_id}\nUpdates a namespace\n\n### DELETE /apps/{app_id}/namespaces/{namespace_id}\nDeletes a namespace\n\n### GET /apps/{app_id}/queues\nLists queues\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /apps/{app_id}/queues\nCreates a queue\n\n### DELETE /apps/{app_id}/queues/{queue_id}\nDeletes a queue\n\n### GET /apps/{app_id}/rules\nLists Reactor rules\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /apps/{app_id}/rules\nCreates a Reactor rule\n\n### GET /apps/{app_id}/rules/{rule_id}\nGets a reactor rule by rule ID\nReturns a single record.\n\n### PATCH /apps/{app_id}/rules/{rule_id}\nUpdates a Reactor rule\n\n### DELETE /apps/{app_id}/rules/{rule_id}\nDeletes a Reactor rule\n\n### PATCH /apps/{id}\nUpdates an app\n\n### DELETE /apps/{id}\nDeletes an app\n\n### POST /apps/{id}/pkcs12\nUpdates app's APNs info from a `.p12` file\n\n### GET /me\nGet token details\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://control.ably.net/v1",
+    "auth": {
+      "type": "BEARER_TOKEN"
+    },
+    "endpoints": [
+      {
+        "name": "apps",
+        "path": "/accounts/{account_id}/apps",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "keys",
+        "path": "/apps/{app_id}/keys",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id",
+          "key"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "namespaces",
+        "path": "/apps/{app_id}/namespaces",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "queues",
+        "path": "/apps/{app_id}/queues",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "rules",
+        "path": "/apps/{app_id}/rules",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

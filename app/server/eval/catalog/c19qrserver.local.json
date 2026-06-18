@@ -1,0 +1,34 @@
+{
+  "name": "c19qrserver.local",
+  "specUrl": "https://api.apis.guru/v2/specs/c19qrserver.local/1.1/openapi.json",
+  "specHash": "6ddadbbba74a52e4",
+  "operationCount": 14,
+  "prose": "# API for the COVID-19 Tracking QR Code Signin Server. API\n\nThis is the API for the COVID-19 Contact Tracing QRCode Signin Server\n\n## Getting started\n\nThe API for the COVID-19 Tracking QR Code Signin Server. API is a JSON REST API. All endpoints are relative to the base URL `http://c19qrserver.local`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `token` header on every request.\n\n## API reference\n\n### POST /changePassword\nUsed for changing your password\n\n### POST /login\nLog in to get an API token\n\n### POST /logout\nLog out\n\n### POST /requestPasswordReset\nUsed for requesting a password reset code\n\n### POST /signin\nCreate a new signin record\n\n### GET /signin/{signinId}\nRetrieve the information associated with a signin record\nReturns a single record.\n\n### PUT /signin/{signinId}\nUpdate a signin record\n\n### DELETE /signin/{signinId}\nDelete a signin record\n\n### GET /signins\nGet signin info\nReturns a list of records.\nAccepts query parameters: `less_than`, `return_count`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /user\nCreate a user\n\n### GET /user/{userId}\nRetrieve the information associated with a team member's user record\nReturns a single record.\n\n### DELETE /user/{userId}\nDelete a team member's user record\n\n### GET /users\nRetrieve the information associated with all team members' user records\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /verifyPasswordChange\nUsed for resetting your password when you forgot it\n",
+  "oracle": {
+    "baseUrl": "http://c19qrserver.local",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "token"
+    },
+    "endpoints": [
+      {
+        "name": "signins",
+        "path": "/signins",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "users",
+        "path": "/users",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

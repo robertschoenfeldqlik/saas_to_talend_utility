@@ -1,0 +1,37 @@
+{
+  "name": "byautomata.io",
+  "specUrl": "https://api.apis.guru/v2/specs/byautomata.io/1.0.1/openapi.json",
+  "specHash": "a7eb58597c14b3b3",
+  "operationCount": 4,
+  "prose": "# Automata Market Intelligence API API\n\nThis document provides the documentation for the Market Intelligence API by Automata. Get your API Key at https://apis.byautomata.io and check out our <a href='https://www.getpostman.com/collections/d182a1c78d4491d55e19'>Postman Collection</a>.<br><br>The root API endpoint is https://api.byautomata.io. Please refer to the code samples for examples of how to call the Market Intelligence API. The Co\n\n## Getting started\n\nThe Automata Market Intelligence API API is a JSON REST API. All endpoints are relative to the base URL `https://api.byautomata.io`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `x-api-key` header on every request.\n\n## API reference\n\n### GET /contentpro-search\nSend search terms to receive the most relevant articles and companies.\nReturns a list of records.\nAccepts query parameters: `terms`.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### POST /contentpro-similar-text\nThe /contentpro-similar-text endpoint accepts and arbitrary piece of text and returns similar articles and blogs written by companies.\n\n### GET /search\nSend search terms to receive the most relevant companies along with text snippets.\nReturns a single record.\n\n### GET /similar\nSend a company website to receive a list of companies related to them.\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://api.byautomata.io",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "x-api-key"
+    },
+    "endpoints": [
+      {
+        "name": "contentpro_search",
+        "path": "/contentpro-search",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "search",
+        "path": "/search",
+        "recordsPath": "$.companies[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      },
+      {
+        "name": "similar",
+        "path": "/similar",
+        "recordsPath": "$.companies[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      }
+    ]
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "blazemeter.com",
+  "specUrl": "https://api.apis.guru/v2/specs/blazemeter.com/4/swagger.json",
+  "specHash": "ddb7136ad41439ef",
+  "operationCount": 14,
+  "prose": "# Blazemeter API Explorer API\n\nLive API Documentation\n\n## Getting started\n\nThe Blazemeter API Explorer API is a JSON REST API. All endpoints are relative to the base URL `https://a.blazemeter.com/api/v4`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `api_key` header on every request.\n\n## API reference\n\n### GET /user/active/sessions\n&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### POST /user/active/terminate\n&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\n\n### GET /user/collections\nList organization multi-tests&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### GET /user/invites\n&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /user/locations\nGet user available locations&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### GET /user/masters\nList user private masters&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### POST /user/password\nUpdate user name&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\n\n### PUT /user/password\nUpdate user name&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\n\n### PATCH /user/password\nUpdate user name&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\n\n### GET /user/projects\nGet user projects&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### GET /user/register\nRegistration&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### POST /user/register\nRegistration&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\n\n### GET /user/tests\nList user private tests&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a single record.\n\n### GET /user/top\n&nbsp; <i class=\"fa fa-lg fa-unlock-alt\"></i>\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://a.blazemeter.com/api/v4",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "api_key"
+    },
+    "endpoints": [
+      {
+        "name": "sessions",
+        "path": "/user/active/sessions",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "collections",
+        "path": "/user/collections",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "invites",
+        "path": "/user/invites",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "locations",
+        "path": "/user/locations",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "masters",
+        "path": "/user/masters",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "projects",
+        "path": "/user/projects",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "register",
+        "path": "/user/register",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "tests",
+        "path": "/user/tests",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "offset"
+      },
+      {
+        "name": "top",
+        "path": "/user/top",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

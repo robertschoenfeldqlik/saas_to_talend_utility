@@ -1,0 +1,58 @@
+{
+  "name": "circleci.com",
+  "specUrl": "https://api.apis.guru/v2/specs/circleci.com/v1/openapi.json",
+  "specHash": "1aecb0fe4075b7dc",
+  "operationCount": 22,
+  "prose": "# CircleCI REST API API\n\nThe CircleCI API is a RESTful, fully-featured API that allows you to do almost anything in CircleCI. You can access all information and trigger all actions. The only thing we don’t provide access to is billing functions, which must be done from the CircleCI web UI.\n\n## Getting started\n\nThe CircleCI REST API API is a JSON REST API. All endpoints are relative to the base URL `https://circleci.com/api/v1`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `circle-token` header on every request.\n\n## API reference\n\n### GET /me\nProvides information about the signed in user.\nReturns a single record.\n\n### GET /project/{username}/{project}\nBuild summary for each of the last 30 builds for a single git repo.\nReturns a list of records.\nAccepts query parameters: `limit`, `offset`, `filter`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /project/{username}/{project}\nTriggers a new build, returns a summary of the build.\n\n### DELETE /project/{username}/{project}/build-cache\nClears the cache for a project.\n\n### GET /project/{username}/{project}/checkout-key\nLists checkout keys.\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /project/{username}/{project}/checkout-key\nCreates a new checkout key. Only usable with a user API token.\n\n### GET /project/{username}/{project}/checkout-key/{fingerprint}\nGet a checkout key.\nReturns a single record.\n\n### DELETE /project/{username}/{project}/checkout-key/{fingerprint}\nDelete a checkout key.\n\n### GET /project/{username}/{project}/envvar\nLists the environment variables for :project\nReturns a single record.\n\n### POST /project/{username}/{project}/envvar\nCreates a new environment variable\n\n### GET /project/{username}/{project}/envvar/{name}\nGets the hidden value of environment variable :name\nReturns a single record.\n\n### DELETE /project/{username}/{project}/envvar/{name}\nDeletes the environment variable named ':name'\n\n### POST /project/{username}/{project}/ssh-key\nCreate an ssh key used to access external systems that require SSH key-based authentication\n\n### POST /project/{username}/{project}/tree/{branch}\nTriggers a new build, returns a summary of the build. Optional build parameters can be set using an experimental API. Note: For more about build parameters, read about [using param\n\n### GET /project/{username}/{project}/{build_num}\nFull details for a single build. The response includes all of the fields from the build summary. This is also the payload for the [notification webhooks](/docs/configuration/#notif\nReturns a single record.\n\n### GET /project/{username}/{project}/{build_num}/artifacts\nList the artifacts produced by a given build.\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /project/{username}/{project}/{build_num}/cancel\nCancels the build, returns a summary of the build.\n\n### POST /project/{username}/{project}/{build_num}/retry\nRetries the build, returns a summary of the new build.\n\n### GET /project/{username}/{project}/{build_num}/tests\nProvides test metadata for a build Note: [Learn how to set up your builds to collect test metadata](https://circleci.com/docs/test-metadata/)\nReturns a single record.\n\n### GET /projects\nList of all the projects you're following on CircleCI, with build information organized by branch.\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /recent-builds\nBuild summary for each of the last 30 recent builds, ordered by build_num.\nReturns a list of records.\nAccepts query parameters: `limit`, `offset`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /user/heroku-key\nAdds your Heroku API key to CircleCI, takes apikey as form param name.\n",
+  "oracle": {
+    "baseUrl": "https://circleci.com/api/v1",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "circle-token"
+    },
+    "endpoints": [
+      {
+        "name": "checkout_key",
+        "path": "/project/{username}/{project}/checkout-key",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "envvar",
+        "path": "/project/{username}/{project}/envvar",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "artifacts",
+        "path": "/project/{username}/{project}/{build_num}/artifacts",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "tests",
+        "path": "/project/{username}/{project}/{build_num}/tests",
+        "recordsPath": "$.tests[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "projects",
+        "path": "/projects",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "recent_builds",
+        "path": "/recent-builds",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "offset"
+      }
+    ]
+  }
+}

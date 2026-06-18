@@ -1,0 +1,33 @@
+{
+  "name": "cnab-online.herokuapp.com",
+  "specUrl": "https://api.apis.guru/v2/specs/cnab-online.herokuapp.com/1.0.0/swagger.json",
+  "specHash": "2f5ca4d12cce276b",
+  "operationCount": 4,
+  "prose": "# Cnab Online API\n\nProcesse arquivos de retorno CNAB\n\n## Getting started\n\nThe Cnab Online API is a JSON REST API. All endpoints are relative to the base URL `https://cnab-online.herokuapp.com/v1`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### POST /file\nFaz o upload de um arquivo\n\n### GET /file/{fileId}\nRetorna as informações básicas de um arquivo previamente processado\nReturns a single record.\n\n### GET /file/{fileId}/lines\nRetorna todas as linhas e seus respectivos campos (de forma não processada, apenas indicando os campos reconhecidos)\nReturns a list of records.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /file/{fileId}/occurrences\nRetorna as informações de baixa de boletos e outros tipos de ocorrências\nReturns a list of records.\n\nSample response:\n\n```json\n{ \"data\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n",
+  "oracle": {
+    "baseUrl": "https://cnab-online.herokuapp.com/v1",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "lines",
+        "path": "/file/{fileId}/lines",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "occurrences",
+        "path": "/file/{fileId}/occurrences",
+        "recordsPath": "$.data[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

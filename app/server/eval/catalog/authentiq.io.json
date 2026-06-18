@@ -1,0 +1,36 @@
+{
+  "name": "authentiq.io",
+  "specUrl": "https://api.apis.guru/v2/specs/authentiq.io/1.0/openapi.json",
+  "specHash": "05050d00256d5047",
+  "operationCount": 9,
+  "prose": "# Authentiq Connect API API\n\nAuthentiq Connect OAuth 2.0 and OpenID Connect API reference. Learn about [Authentiq ID](https://www.authentiq.com/) or check out the [Authentiq Connect](https://developers.authentiq.com) developer documentation.\n\n## Getting started\n\nThe Authentiq Connect API API is a JSON REST API. All endpoints are relative to the base URL `https://connect.authentiq.io`.\n\n## Authentication\n\nAuthorization uses OAuth 2.0. Obtain an access token from the token endpoint, then send it as a Bearer token.\n\n## API reference\n\n### GET /authorize\nAuthenticate a user\nReturns a single record.\n\n### GET /client\nList clients\nReturns a list of records.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /client\nRegister a client\n\n### GET /client/{client_id}\nView a client\nReturns a single record.\n\n### PUT /client/{client_id}\nUpdate a client\n\n### DELETE /client/{client_id}\nDelete a client\n\n### POST /token\nObtain an ID Token\n\n### GET /userinfo\nRetrieve a user profile\nReturns a single record.\n\n### GET /{client_id}/iframe\nInclude a session iframe\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://connect.authentiq.io",
+    "auth": {
+      "type": "OAUTH2"
+    },
+    "endpoints": [
+      {
+        "name": "authorize",
+        "path": "/authorize",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "client",
+        "path": "/client",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "iframe",
+        "path": "/{client_id}/iframe",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

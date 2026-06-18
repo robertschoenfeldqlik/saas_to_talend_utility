@@ -1,0 +1,22 @@
+{
+  "name": "carbondoomsday.com",
+  "specUrl": "https://api.apis.guru/v2/specs/carbondoomsday.com/v1/swagger.json",
+  "specHash": "033a026ad07b83b1",
+  "operationCount": 2,
+  "prose": "# CarbonDoomsDay API\n\nA real-time RESTish web API for worldwide carbon dioxide levels.\n\n## Getting started\n\nThe CarbonDoomsDay API is a JSON REST API. All endpoints are relative to the base URL `https://api.carbondoomsday.com/api`.\n\n## Authentication\n\nThis API uses HTTP Basic authentication — supply your username and password with each request.\n\n## API reference\n\n### GET /co2/\nCO2 measurements from the Mauna Loa observatory. This data is made available through the good work of the people at the Mauna Loa observatory. Their release notes say: These data a\nReturns a list of records.\nAccepts query parameters: `ppm`, `date`, `date__range`, `ordering`, `page`, `limit`.\n\nSample response:\n\n```json\n{ \"results\": [ { \"id\": 1 }, { \"id\": 2 } ] }\n```\n\n### GET /co2/{date}/\nCO2 measurements from the Mauna Loa observatory. This data is made available through the good work of the people at the Mauna Loa observatory. Their release notes say: These data a\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://api.carbondoomsday.com/api",
+    "auth": {
+      "type": "BASIC"
+    },
+    "endpoints": [
+      {
+        "name": "co2",
+        "path": "/co2/",
+        "recordsPath": "$.results[*]",
+        "primaryKeys": [],
+        "paginationStyle": "page"
+      }
+    ]
+  }
+}

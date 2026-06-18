@@ -1,0 +1,30 @@
+{
+  "name": "codesearch.debian.net",
+  "specUrl": "https://api.apis.guru/v2/specs/codesearch.debian.net/1.4.0/openapi.json",
+  "specHash": "8aeb2656ecc787e2",
+  "operationCount": 2,
+  "prose": "# Debian Code Search API\n\nOpenAPI for https://codesearch.debian.net/\n\n## Getting started\n\nThe Debian Code Search API is a JSON REST API. All endpoints are relative to the base URL `https://codesearch.debian.net/api/v1`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `x-dcs-apikey` header on every request.\n\n## API reference\n\n### GET /search\nSearches through source code\nReturns a list of records.\nAccepts query parameters: `query`, `match_mode`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /searchperpackage\nLike /search, but aggregates per package\nReturns a list of records.\nAccepts query parameters: `query`, `match_mode`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n",
+  "oracle": {
+    "baseUrl": "https://codesearch.debian.net/api/v1",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "x-dcs-apikey"
+    },
+    "endpoints": [
+      {
+        "name": "search",
+        "path": "/search",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "searchperpackage",
+        "path": "/searchperpackage",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

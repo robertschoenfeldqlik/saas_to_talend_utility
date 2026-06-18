@@ -1,0 +1,22 @@
+{
+  "name": "afterbanks.com",
+  "specUrl": "https://api.apis.guru/v2/specs/afterbanks.com/3.0.0/swagger.json",
+  "specHash": "2e65e9a42a64b77c",
+  "operationCount": 3,
+  "prose": "# Afterbanks API API\n\nLa estandarización de la conexión con cualquier banco en tiempo real.\n\n## Getting started\n\nThe Afterbanks API API is a JSON REST API. All endpoints are relative to the base URL `https://www.afterbanks.com`.\n\n## Authentication\n\nNo authentication is required to call this API.\n\n## API reference\n\n### GET /forms\nLista de bancos soportados\nReturns a list of records.\nAccepts query parameters: `country_code`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### POST /me\nInformación de uso de mi licencia\n\n### POST /serviceV3\nPosición global y movimientos hasta una fecha dada.\n",
+  "oracle": {
+    "baseUrl": "https://www.afterbanks.com",
+    "auth": {
+      "type": "NO_AUTH"
+    },
+    "endpoints": [
+      {
+        "name": "forms",
+        "path": "/forms",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}

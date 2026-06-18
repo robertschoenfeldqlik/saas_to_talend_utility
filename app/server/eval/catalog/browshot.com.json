@@ -1,0 +1,103 @@
+{
+  "name": "browshot.com",
+  "specUrl": "https://api.apis.guru/v2/specs/browshot.com/1.17.0/swagger.json",
+  "specHash": "655e81883c1829b5",
+  "operationCount": 17,
+  "prose": "# Browshot API API\n\nTake screenshots of any website in real time\n\n## Getting started\n\nThe Browshot API API is a JSON REST API. All endpoints are relative to the base URL `https://api.browshot.com/api/v1`.\n\n## Authentication\n\nAuthenticate by passing your API key in the `key` header on every request.\n\n## API reference\n\n### GET /account/info\nGet information about your account\nReturns a single record.\n\n### POST /batch/ceate\nRequests thousands of screenshtos at once\n\n### GET /batch/info\nGet the batch status\nReturns a single record.\n\n### GET /browser/info\nGet information about a browser\nReturns a single record.\n\n### GET /browser/list\nGet all browsers\nReturns a single record.\n\n### GET /instance/info\nGet information about an instance\nReturns a single record.\n\n### GET /instance/list\nGet all instances\nReturns a single record.\n\n### GET /screenshot/create\nRequest a screenshot\nReturns a single record.\n\n### GET /screenshot/delete\nDelete screenshot data\nReturns a list of records.\nAccepts query parameters: `id`, `data`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/host\nHost thumbnails on your own S3 account or on Browshot.\nReturns a list of records.\nAccepts query parameters: `id`, `hosting`, `width`, `height`, `scale`, `bucket`, `file`, `headers`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/html\nGet the HTML code\nReturns a single record.\n\n### GET /screenshot/info\nQuery screenshot status\nReturns a list of records.\nAccepts query parameters: `id`, `details`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/list\nGet information about screenshots\nReturns a list of records.\nAccepts query parameters: `limit`, `status`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/multiple\nRequest multiple screenshots\nReturns a single record.\n\n### GET /screenshot/search\nSearch for screenshots\nReturns a list of records.\nAccepts query parameters: `url`, `limit`, `status`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/share\nShare a screenshot\nReturns a list of records.\nAccepts query parameters: `id`, `note`.\n\nSample response:\n\n```json\n[ { \"id\": 1 }, { \"id\": 2 } ]\n```\n\n### GET /screenshot/thumbnail\nRetrieve a thumbnail image\nReturns a single record.\n",
+  "oracle": {
+    "baseUrl": "https://api.browshot.com/api/v1",
+    "auth": {
+      "type": "API_KEY",
+      "apiKeyName": "key"
+    },
+    "endpoints": [
+      {
+        "name": "info",
+        "path": "/account/info",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "info",
+        "path": "/batch/info",
+        "recordsPath": "$.urls[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "list",
+        "path": "/instance/list",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "delete",
+        "path": "/screenshot/delete",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "host",
+        "path": "/screenshot/host",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "html",
+        "path": "/screenshot/html",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "info",
+        "path": "/screenshot/info",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "list",
+        "path": "/screenshot/list",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "search",
+        "path": "/screenshot/search",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "share",
+        "path": "/screenshot/share",
+        "recordsPath": "$[*]",
+        "primaryKeys": [
+          "id"
+        ],
+        "paginationStyle": "none"
+      },
+      {
+        "name": "thumbnail",
+        "path": "/screenshot/thumbnail",
+        "recordsPath": "$[*]",
+        "primaryKeys": [],
+        "paginationStyle": "none"
+      }
+    ]
+  }
+}
