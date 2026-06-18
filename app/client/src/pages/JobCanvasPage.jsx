@@ -16,10 +16,10 @@ const AUTH_LABEL = {
 
 /**
  * Build the visual node/edge graph from a real job's stored config. This
- * mirrors EXACTLY what the Java engine emits at export time:
+ * mirrors EXACTLY what the Java engine emits at export time — a LINEAR flow
+ * (one main output per component; tLogRow is a pass-through):
  *
- *   HTTPClient (TaCoKit) --row1--> tExtractJSONFields --row2--> tLogRow
- *                                                     \--row3--> tFileOutputJSON (or tDBOutput)
+ *   HTTPClient --row1--> tExtractJSONFields --row2--> tLogRow --row3--> tFileOutputJSON (or tDBOutput)
  *
  * The job config carries { path, paginationStyle, recordsPath, outputType, output },
  * and the project carries { baseUrl, authConfig }.
@@ -82,11 +82,14 @@ function buildGraphFromJob(job) {
     endpoint: path,
     status: job.status,
     config: {
-      nodes: [httpClient, extract, output, logRow],
+      // Linear pipeline — a Talend component allows only one main output, so the
+      // file/DB output hangs off the pass-through tLogRow, not a second output of
+      // tExtractJSONFields. Order matches the left-to-right canvas layout.
+      nodes: [httpClient, extract, logRow, output],
       edges: [
         { source: 'http-1', target: 'extract-1', label: 'row1' },
-        { source: 'extract-1', target: 'output-1', label: 'row3' },
         { source: 'extract-1', target: 'log-1', label: 'row2' },
+        { source: 'log-1', target: 'output-1', label: 'row3' },
       ],
     },
   };

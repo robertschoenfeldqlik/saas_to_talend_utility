@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   Controls,
-  MiniMap,
   Background,
   useNodesState,
   useEdgesState,
@@ -83,16 +82,6 @@ export default function JobCanvas({ nodes: inputNodes, edges: inputEdges, onNode
             border: '1px solid rgb(var(--color-border))',
             borderRadius: '12px',
             overflow: 'hidden',
-          }}
-        />
-        <MiniMap
-          position="bottom-right"
-          nodeColor={(n) => n.data?.color || '#6B7280'}
-          maskColor="rgba(0, 0, 0, 0.08)"
-          style={{
-            background: 'rgb(var(--color-surface))',
-            border: '1px solid rgb(var(--color-border))',
-            borderRadius: '12px',
           }}
         />
         <Background gap={20} size={1} color="rgb(var(--color-border) / 0.5)" />
