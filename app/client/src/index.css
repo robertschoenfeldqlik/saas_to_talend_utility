@@ -189,6 +189,19 @@
   --coral: #e0623a;
 }
 
+/* Direction C — dark mode. The editorial restyle hardcoded a light paper/ink
+   palette with no dark values, so the theme toggle flipped the `.dark` class
+   but nothing responded. These overrides give the editorial layer a dark
+   palette: paper -> warm near-black, ink -> warm off-white. The sidebar is
+   hardcoded dark in both themes, so only the main content inverts. */
+.dark {
+  --paper: #14130d;  --paper-2: #1c1a13;  --card-ed: #1f1d15;  --ink: #efe9da;
+  --ink-2: #b3ae9c;  --ink-3: #837e6d;
+  --line: #2b2920;   --line-2: #3a372b;
+  --green: #2ba35a;  --green-700: #1c7a40;  --green-300: #8ed0a0;  --green-pale: #1b2a1f;
+  --coral: #e8714d;
+}
+
 .ed-display { font-family: 'Bricolage Grotesque', 'Space Grotesk', sans-serif; }
 .ed-ui      { font-family: 'Space Grotesk', system-ui, sans-serif; }
 .ed-mono    { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
@@ -241,6 +254,23 @@
   --brand-500: 19 133 63;           /* green */
   --brand-600: 12 94 44;            /* green-700 */
   --brand-700: 12 94 44;
+}
+/* Dark-mode remap of the shared --color-* tokens for the editorial shell, so
+   the pages that consume them (cards, inputs, buttons, headers) go dark too.
+   Specificity (.dark .ed-root) beats the .ed-root light remap above. */
+.dark .ed-root {
+  --color-bg: 20 19 13;             /* paper (dark) */
+  --color-surface: 31 29 21;        /* card */
+  --color-surface-alt: 28 26 19;    /* paper-2 */
+  --color-surface-hover: 58 55 43;
+  --color-text: 239 233 218;        /* ink */
+  --color-text-secondary: 179 174 156;
+  --color-text-muted: 131 126 109;
+  --color-border: 58 55 43;         /* line-2 */
+  --color-border-light: 43 41 32;
+  --brand-500: 43 163 90;           /* green (brightened for dark) */
+  --brand-600: 28 122 64;
+  --brand-700: 28 122 64;
 }
 .ed-root .page-header { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; letter-spacing: -.02em; }
 .ed-root .card { box-shadow: none; border-width: 1.5px; border-radius: 18px; border-color: var(--line-2); }
