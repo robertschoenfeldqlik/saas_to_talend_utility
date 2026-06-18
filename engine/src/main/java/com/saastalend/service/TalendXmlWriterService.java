@@ -466,6 +466,11 @@ public class TalendXmlWriterService {
                         // null" in String.equals on the column type).
                         colEl.addAttribute("type",
                                 col.getTalendType() != null ? col.getTalendType() : "id_String");
+                        // Date columns need a format pattern or Talend flags the
+                        // schema ("date pattern is missing") and can't parse them.
+                        if (col.getPattern() != null && !col.getPattern().isEmpty()) {
+                            colEl.addAttribute("pattern", col.getPattern());
+                        }
                         if (col.getLength() > 0) {
                             colEl.addAttribute("length", String.valueOf(col.getLength()));
                         }

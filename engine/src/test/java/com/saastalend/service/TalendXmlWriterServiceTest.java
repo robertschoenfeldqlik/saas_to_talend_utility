@@ -1,5 +1,6 @@
 package com.saastalend.service;
 
+import com.saastalend.generator.TExtractJSONFieldsGenerator;
 import com.saastalend.generator.TFileOutputJSONGenerator;
 import com.saastalend.model.DiscoveredEndpoint;
 import com.saastalend.model.FieldInfo;
@@ -34,5 +35,22 @@ class TalendXmlWriterServiceTest {
                 "schema column must carry the Talend 'type' attribute");
         assertFalse(xml.contains("talendType="),
                 "must not emit 'talendType' — Talend reads 'type', so that left it null on import");
+    }
+
+    @Test
+    void dateColumnCarriesADatePattern() {
+        DiscoveredEndpoint ep = DiscoveredEndpoint.builder()
+                .responseFields(List.of(
+                        FieldInfo.builder().name("date").type("id_Date").build(),
+                        FieldInfo.builder().name("base").type("id_String").build()))
+                .build();
+        TalendNode extract = TExtractJSONFieldsGenerator.generate(ep, 100, 100);
+        TalendJob job = TalendJob.builder().name("Test").nodes(List.of(extract)).build();
+
+        String xml = new TalendXmlWriterService().writeItemXml(job);
+
+        // id_Date column must carry a pattern (Talend can't parse a date without one)
+        assertTrue(xml.matches("(?s).*name=\"date\"[^>]*type=\"id_Date\"[^>]*pattern=\"[^\"]+\".*"),
+                "id_Date column must carry a date pattern");
     }
 }

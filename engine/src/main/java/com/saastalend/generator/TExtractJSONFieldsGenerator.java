@@ -109,9 +109,11 @@ public final class TExtractJSONFieldsGenerator {
         if (endpoint != null && endpoint.getResponseFields() != null
                 && !endpoint.getResponseFields().isEmpty()) {
             for (FieldInfo field : endpoint.getResponseFields()) {
+                String type = field.getType() != null ? field.getType() : "id_String";
                 columns.add(TalendMetadataColumn.builder()
                         .name(sanitizeColumnName(field.getName()))
-                        .talendType(field.getType() != null ? field.getType() : "id_String")
+                        .talendType(type)
+                        .pattern(datePattern(type))
                         .key(endpoint.getPrimaryKeys() != null
                                 && endpoint.getPrimaryKeys().contains(field.getName()))
                         .nullable(true)
@@ -123,6 +125,14 @@ public final class TExtractJSONFieldsGenerator {
                     .name("body").talendType("id_String").nullable(true).build());
         }
         return columns;
+    }
+
+    /** Talend SimpleDateFormat literal for date columns (ISO date, as most JSON
+     *  APIs emit). id_Date columns require a pattern or Studio flags the schema. */
+    private static final String DEFAULT_DATE_PATTERN = "\"yyyy-MM-dd\"";
+
+    private static String datePattern(String talendType) {
+        return "id_Date".equalsIgnoreCase(talendType) ? DEFAULT_DATE_PATTERN : null;
     }
 
     private static String sanitizeColumnName(String name) {

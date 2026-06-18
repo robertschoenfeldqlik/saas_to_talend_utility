@@ -27,4 +27,8 @@ public class TalendMetadataColumn {
     private int precision = 0;
 
     private String comment;
+
+    /** Date/time format pattern (Talend SimpleDateFormat literal, e.g. "yyyy-MM-dd").
+     *  Required by Talend for id_Date columns — without it Studio flags the schema. */
+    private String pattern;
 }
